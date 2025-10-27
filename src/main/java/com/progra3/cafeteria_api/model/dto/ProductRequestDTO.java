@@ -5,6 +5,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.Builder;
 
+import java.util.List;
+
 @Builder
 @ValidProductRequest
 public record ProductRequestDTO(
@@ -37,5 +39,14 @@ public record ProductRequestDTO(
 
         @PositiveOrZero(message = "Stock can't be less than 0")
         @Schema(description = "Current stock quantity", example = "25", minimum = "0")
-        Integer stock
+        Integer stock,
+
+        @Schema(description = "List of components if the product is composed of other products (empty if not composite)",
+                example = "[{\"productId\": 1, \"quantity\": 2}]")
+        List<ProductComponentRequestDTO> components,
+
+        @Schema(description = "List of product group IDs this product belongs to",
+                example = "[1, 2, 3]")
+        List<Long> productGroupIds
 ) { }
+

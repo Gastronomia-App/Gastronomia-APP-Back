@@ -20,11 +20,11 @@ public class ProductComponent {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
+    @JoinColumn(name = "product_id")
     private Product product;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_product_id", nullable = false)
+    @JoinColumn(name = "parent_product_id")
     private Product parentProduct;
 
     @Column(nullable = false)

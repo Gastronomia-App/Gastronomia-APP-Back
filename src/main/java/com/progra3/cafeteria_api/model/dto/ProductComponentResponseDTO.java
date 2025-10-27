@@ -8,7 +8,7 @@ public record ProductComponentResponseDTO(
         Long id,
 
         @Schema(description = "Name of the product component", example = "Espresso Shot")
-        String productName,
+        String name,
 
         @Schema(description = "Quantity of the component used", example = "2")
         Integer quantity

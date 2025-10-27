@@ -29,8 +29,8 @@ public record ProductResponseDTO(
         @Schema(description = "Current stock quantity", example = "25")
         Integer stock,
 
-        @Schema(description = "Name of the category this product belongs to", example = "Bebidas")
-        String categoryName,
+        @Schema(description = "ID of the category this product belongs to", example = "3")
+        Integer categoryId,
 
         @Schema(description = "Indicates if the product is logically deleted", example = "false")
         Boolean deleted,
@@ -42,6 +42,6 @@ public record ProductResponseDTO(
         List<ProductComponentResponseDTO> components,
 
         @Schema(description = "List of product groups the product belongs to", example = "[\"Promociones\", \"Especiales\"]")
-        List<String> productGroups
+        List<ProductGroupResponseDTO> productGroups
 
 ) { }

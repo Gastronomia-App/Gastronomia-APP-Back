@@ -99,7 +99,7 @@ public class ProductController {
 
             @RequestParam(required = false)
             @Schema(description = "Filter by composite product status (true for composite, false for non-composite)", example = "false")
-            boolean composite,
+            Boolean composite,
 
             @RequestParam(defaultValue = "0")
             @Schema(description = "Page number for pagination (0-based)", example = "0")

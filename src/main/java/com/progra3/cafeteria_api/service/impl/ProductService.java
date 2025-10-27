@@ -4,6 +4,7 @@ import com.progra3.cafeteria_api.exception.product.ProductNotFoundException;
 import com.progra3.cafeteria_api.model.dto.ProductComponentRequestDTO;
 import com.progra3.cafeteria_api.model.dto.ProductRequestDTO;
 import com.progra3.cafeteria_api.model.dto.ProductResponseDTO;
+import com.progra3.cafeteria_api.model.mapper.ProductComponentMapper;
 import com.progra3.cafeteria_api.model.mapper.ProductMapper;
 import com.progra3.cafeteria_api.model.entity.Category;
 import com.progra3.cafeteria_api.model.entity.Product;
@@ -30,7 +31,7 @@ public class ProductService implements IProductService {
     private final EmployeeContext employeeContext;
     private final CategoryService categoryService;
     private final ProductGroupService productGroupService;
-    private final ProductComponentService productComponentService;
+    private final ProductComponentMapper productComponentMapper;
 
     private final ProductMapper productMapper;
 
@@ -39,12 +40,21 @@ public class ProductService implements IProductService {
     public ProductResponseDTO createProduct(ProductRequestDTO productRequestDTO) {
         Category category = categoryService.getEntityById(productRequestDTO.categoryId());
         Product product = productMapper.toEntity(productRequestDTO);
-        product.setCategory(category);
         product.setBusiness(employeeContext.getCurrentBusiness());
-
+        product.setCategory(category);
         product.setDeleted(false);
-        product.setComposite(false);
-        product.setCompositionType(NONE);
+
+        if (productRequestDTO.components() != null) {
+            productRequestDTO.components().forEach(dto -> addComponent(product, dto));
+        }
+
+        if (productRequestDTO.productGroupIds() != null) {
+            productRequestDTO.productGroupIds().forEach(groupId -> {
+                ProductGroup group = productGroupService.getEntityById(groupId);
+                product.getProductGroups().add(group);
+            });
+        }
+        adjustComposite(product);
 
         return productMapper.toDTO(productRepository.save(product));
     }
@@ -155,10 +165,11 @@ public class ProductService implements IProductService {
     }
 
     private void addComponent(Product parentProduct, ProductComponentRequestDTO dto) {
-        ProductComponent component = productComponentService.createProductComponent(dto);
+        Product childProduct = getEntityById(dto.productId());
+        ProductComponent component = productComponentMapper.toEntity(dto);
+        component.setProduct(childProduct);
         component.setParentProduct(parentProduct);
         parentProduct.getComponents().add(component);
-
     }
 
     private void adjustComposite(Product product) {
