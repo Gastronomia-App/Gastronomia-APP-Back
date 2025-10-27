@@ -11,7 +11,7 @@ import java.util.List;
 
 public interface IExpenseService {
     ExpenseResponseDTO create(ExpenseRequestDTO dto);
-    Page<ExpenseResponseDTO> getExpenses(Long supplierId, Double minAmount, Double maxAmount, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
+    Page<ExpenseResponseDTO> getExpenses(Long supplierId, String supplierName, Double minAmount, Double maxAmount, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
     ExpenseResponseDTO getById(Long expenseId);
     ExpenseResponseDTO update(Long expenseId, ExpenseUpdateDTO expenseRequestDTO);
     ExpenseResponseDTO delete(Long expenseId);

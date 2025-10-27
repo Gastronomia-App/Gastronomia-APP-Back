@@ -17,13 +17,15 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     @Query("SELECT e FROM Expense e WHERE " +
             "e.business.id = :businessId AND " +
-            "e.deleted = false AND" +
+            "e.deleted = false AND " +
             "(:supplierId IS NULL OR e.supplier.id = :supplierId) AND " +
+            "(:supplierName IS NULL OR LOWER(e.supplier.legalName) LIKE LOWER(CONCAT('%', :supplierName, '%')) OR LOWER(e.supplier.tradeName) LIKE LOWER(CONCAT('%', :supplierName, '%'))) AND " +
             "(:minAmount IS NULL OR e.amount >= :minAmount) AND " +
             "(:maxAmount IS NULL OR e.amount <= :maxAmount) AND " +
             "(:startDate IS NULL OR e.dateTime >= :startDate) AND " +
             "(:endDate IS NULL OR e.dateTime <= :endDate) ")
     Page<Expense> findByBusiness_Id(@Param("supplierId") Long supplierId,
+                                    @Param("supplierName") String supplierName,
                                     @Param("minAmount") Double minAmount,
                                     @Param("maxAmount") Double maxAmount,
                                     @Param("startDate") LocalDateTime startDate,

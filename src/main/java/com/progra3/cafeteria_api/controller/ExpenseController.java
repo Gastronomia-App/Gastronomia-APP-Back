@@ -36,7 +36,7 @@ public class ExpenseController {
 
     private final SortUtils sortUtils;
 
-    @Operation(summary = "Create a new expense", description = "Registers a new expense in the system, including supplier, amount, and optional comment.")
+    @Operation(summary = "Create a new expense", description = "Registers a new expense in the system, including supplier, amount, date/time, and optional comment.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Expense created successfully",
                     content = @Content(mediaType = "application/json",
@@ -48,7 +48,7 @@ public class ExpenseController {
     @PostMapping
     public ResponseEntity<ExpenseResponseDTO> createExpense(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Expense data to create, including supplier ID, amount, and optional comment.",
+                    description = "Expense data to create, including supplier ID, amount, date/time, and optional comment.",
                     required = true,
                     content = @Content(
                             schema = @Schema(implementation = ExpenseRequestDTO.class),
@@ -56,7 +56,8 @@ public class ExpenseController {
                                 {
                                   "supplierId": 12,
                                   "amount": 1500.50,
-                                  "comment": "Office supplies purchase"
+                                  "comment": "Office supplies purchase",
+                                  "dateTime": "2025-10-26T14:30:00"
                                 }
                                 """)
                     )
@@ -70,7 +71,7 @@ public class ExpenseController {
 
     @Operation(
             summary = "Get all expenses",
-            description = "Retrieves a paginated list of expenses, optionally filtered by supplier, amount range, or date range."
+            description = "Retrieves a paginated list of expenses, optionally filtered by supplier ID, supplier name, amount range, or date range."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Expenses retrieved successfully",
@@ -84,6 +85,9 @@ public class ExpenseController {
     public ResponseEntity<Page<ExpenseResponseDTO>> getExpenses(
             @Parameter(description = "Filter by supplier ID (optional)", example = "12")
             @RequestParam(required = false) Long supplierId,
+
+            @Parameter(description = "Filter by supplier name (partial match on legal name or trade name, optional)", example = "ACME")
+            @RequestParam(required = false) String supplierName,
 
             @Parameter(description = "Minimum amount for filtering expenses (optional)", example = "100.00")
             @RequestParam(required = false) Double minAmount,
@@ -107,7 +111,7 @@ public class ExpenseController {
             @RequestParam(defaultValue = "dateTime,asc") String sort
     ) {
         Pageable pageable = PageRequest.of(page, size, sortUtils.buildSort(sort));
-        Page<ExpenseResponseDTO> expenses = expenseService.getExpenses(supplierId, minAmount, maxAmount, startDate, endDate, pageable);
+        Page<ExpenseResponseDTO> expenses = expenseService.getExpenses(supplierId, supplierName, minAmount, maxAmount, startDate, endDate, pageable);
         return ResponseEntity.ok(expenses);
     }
 

@@ -7,7 +7,6 @@ import org.mapstruct.*;
 
 @Mapper(componentModel = "spring", builder = @Builder (disableBuilder = true))
 public interface ProductComponentMapper {
-    @Mapping(target = "productName", source = "product.name")
     ProductComponentResponseDTO toDTO(ProductComponent productComponent);
 
     ProductComponent toEntity(ProductComponentRequestDTO dto);

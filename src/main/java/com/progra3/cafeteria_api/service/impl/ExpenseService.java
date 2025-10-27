@@ -19,7 +19,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -36,8 +35,6 @@ public class ExpenseService implements IExpenseService {
 
     private final ExpenseMapper expenseMapper;
 
-    private final Clock clock;
-
     @Override
     public ExpenseResponseDTO create(ExpenseRequestDTO dto) {
         Supplier supplier = supplierService.getEntityById(dto.supplierId());
@@ -45,16 +42,16 @@ public class ExpenseService implements IExpenseService {
         Expense expense = expenseMapper.toEntity(dto);
         expense.setSupplier(supplier);
         expense.setBusiness(employeeContext.getCurrentBusiness());
-        expense.setDateTime(LocalDateTime.now(clock));
         eventPublisher.publishEvent(new ExpenseCreatedEvent(expense));
 
         return expenseMapper.toDTO(expenseRepository.save(expense));
     }
 
     @Override
-    public Page<ExpenseResponseDTO> getExpenses(Long supplierId, Double minAmount, Double maxAmount, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+    public Page<ExpenseResponseDTO> getExpenses(Long supplierId, String supplierName, Double minAmount, Double maxAmount, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
         Page<Expense> expenses = expenseRepository.findByBusiness_Id(
                 supplierId,
+                supplierName,
                 minAmount,
                 maxAmount,
                 startDate,
