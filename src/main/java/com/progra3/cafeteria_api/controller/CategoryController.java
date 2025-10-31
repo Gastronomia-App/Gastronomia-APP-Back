@@ -15,12 +15,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -58,16 +60,26 @@ public class CategoryController {
     }
 
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'WAITER')")
-    @Operation(summary = "Get all categories", description = "Returns a list of all registered categories")
+    @Operation(summary = "Get all categories", description = "Returns a page of all registered categories")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Category list retrieved successfully",
+            @ApiResponse(responseCode = "200", description = "Category page retrieved successfully",
                     content = @Content(mediaType = "application/json",
                             array = @ArraySchema(schema = @Schema(implementation = CategoryResponseDTO.class)))),
             @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
     })
     @GetMapping
-    public List<CategoryResponseDTO> getAllCategories() {
-        return categoryService.getAllCategories();
+    public ResponseEntity<Page<CategoryResponseDTO>> getAllCategories(
+            @RequestParam(defaultValue = "0")
+            @Schema(description = "Page number for pagination (0-based)", example = "0")
+            int page,
+
+            @RequestParam(defaultValue = "10")
+            @Schema(description = "Number of products per page", example = "10")
+            int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<CategoryResponseDTO> categories = categoryService.getAllCategories(pageable);
+        return ResponseEntity.ok(categories);
     }
 
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'WAITER')")

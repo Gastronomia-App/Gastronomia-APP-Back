@@ -10,10 +10,10 @@ import com.progra3.cafeteria_api.repository.CategoryRepository;
 import com.progra3.cafeteria_api.security.EmployeeContext;
 import com.progra3.cafeteria_api.service.port.ICategoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -46,12 +46,10 @@ public class CategoryService implements ICategoryService {
     }
 
     @Override
-    public List<CategoryResponseDTO> getAllCategories() {
-        return categoryRepository.findByBusiness_Id(employeeContext.getCurrentBusinessId())
-                .stream()
-                .map(categoryMapper::toDTO)
-                .collect(Collectors.toList());
-    }
+    public Page<CategoryResponseDTO> getAllCategories(Pageable pageable) {
+            Page<Category> categories = categoryRepository.findByBusiness_Id(employeeContext.getCurrentBusinessId(), pageable);
+            return categories.map(categoryMapper::toDTO);
+        }
 
     @Override
     public CategoryResponseDTO updateCategory(Long id, CategoryRequestDTO categoryRequestDTO) {
@@ -59,6 +57,7 @@ public class CategoryService implements ICategoryService {
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID " + id + " for the current business."));
 
         categoryToUpdate.setName(categoryRequestDTO.name());
+        categoryToUpdate.setColor(categoryRequestDTO.color());
         return categoryMapper.toDTO(categoryRepository.save(categoryToUpdate));
     }
 

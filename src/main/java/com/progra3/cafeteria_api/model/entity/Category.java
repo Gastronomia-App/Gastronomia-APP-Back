@@ -24,6 +24,8 @@ public class Category {
     @Column(nullable = false)
     private String name;
 
+    private String color;
+
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
     private List<Product> products = new ArrayList<>();
 
