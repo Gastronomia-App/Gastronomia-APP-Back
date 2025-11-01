@@ -2,6 +2,7 @@ package com.progra3.cafeteria_api.controller;
 
 import com.progra3.cafeteria_api.model.dto.SeatingRequestDTO;
 import com.progra3.cafeteria_api.model.dto.SeatingResponseDTO;
+import com.progra3.cafeteria_api.model.dto.SeatingPositionRequestDTO;
 import com.progra3.cafeteria_api.service.port.ISeatingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -98,7 +99,7 @@ public class SeatingController {
                     content = @Content(schema = @Schema(implementation = SeatingRequestDTO.class))
             )
             @RequestBody @Valid SeatingRequestDTO dto) {
-        SeatingResponseDTO seatingResponseDTO = seatingService.updateNumber(id, dto);
+        SeatingResponseDTO seatingResponseDTO = seatingService.updateSeating(id, dto);
         return ResponseEntity.ok(seatingResponseDTO);
     }
 
@@ -114,4 +115,22 @@ public class SeatingController {
             @PathVariable Long id) {
         return ResponseEntity.ok(seatingService.delete(id));
     }
+
+    @Operation(summary = "Update seating position", description = "Updates the position of a seating entry")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Seating position updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Seating not found", content = @Content)
+    })
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PatchMapping("/{id}/position")
+    public ResponseEntity<SeatingResponseDTO> updatePosition(
+            @PathVariable Long id,
+            @RequestBody SeatingPositionRequestDTO request
+    ) {
+        SeatingResponseDTO updated = seatingService.updatePosition(id, request);
+        return ResponseEntity.ok(updated);
+    }
+
+
+
 }

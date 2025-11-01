@@ -3,13 +3,16 @@ package com.progra3.cafeteria_api.model.mapper;
 import com.progra3.cafeteria_api.model.dto.SeatingRequestDTO;
 import com.progra3.cafeteria_api.model.dto.SeatingResponseDTO;
 import com.progra3.cafeteria_api.model.entity.Seating;
+import com.progra3.cafeteria_api.model.enums.SeatingOrientation;
+import com.progra3.cafeteria_api.model.enums.SeatingShape;
+import com.progra3.cafeteria_api.model.enums.SeatingSize;
 import com.progra3.cafeteria_api.model.enums.SeatingStatus;
 import javax.annotation.processing.Generated;
 import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-06-17T00:03:10-0300",
+    date = "2025-10-31T15:29:26-0300",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 24.0.1 (Oracle Corporation)"
 )
 @Component
@@ -23,15 +26,29 @@ public class SeatingMapperImpl implements SeatingMapper {
 
         Long id = null;
         Integer number = null;
+        Integer posX = null;
+        Integer posY = null;
+        Integer width = null;
+        Integer height = null;
+        SeatingShape shape = null;
+        SeatingSize size = null;
+        SeatingOrientation orientation = null;
         SeatingStatus status = null;
         Boolean deleted = null;
 
         id = seating.getId();
         number = seating.getNumber();
+        posX = seating.getPosX();
+        posY = seating.getPosY();
+        width = seating.getWidth();
+        height = seating.getHeight();
+        shape = seating.getShape();
+        size = seating.getSize();
+        orientation = seating.getOrientation();
         status = seating.getStatus();
         deleted = seating.getDeleted();
 
-        SeatingResponseDTO seatingResponseDTO = new SeatingResponseDTO( id, number, status, deleted );
+        SeatingResponseDTO seatingResponseDTO = new SeatingResponseDTO( id, number, posX, posY, width, height, shape, size, orientation, status, deleted );
 
         return seatingResponseDTO;
     }
@@ -45,6 +62,11 @@ public class SeatingMapperImpl implements SeatingMapper {
         Seating seating = new Seating();
 
         seating.setNumber( seatingRequestDTO.number() );
+        seating.setPosX( seatingRequestDTO.posX() );
+        seating.setPosY( seatingRequestDTO.posY() );
+        seating.setShape( seatingRequestDTO.shape() );
+        seating.setSize( seatingRequestDTO.size() );
+        seating.setOrientation( seatingRequestDTO.orientation() );
 
         return seating;
     }
@@ -57,6 +79,21 @@ public class SeatingMapperImpl implements SeatingMapper {
 
         if ( seatingRequestDTO.number() != null ) {
             seating.setNumber( seatingRequestDTO.number() );
+        }
+        if ( seatingRequestDTO.posX() != null ) {
+            seating.setPosX( seatingRequestDTO.posX() );
+        }
+        if ( seatingRequestDTO.posY() != null ) {
+            seating.setPosY( seatingRequestDTO.posY() );
+        }
+        if ( seatingRequestDTO.shape() != null ) {
+            seating.setShape( seatingRequestDTO.shape() );
+        }
+        if ( seatingRequestDTO.size() != null ) {
+            seating.setSize( seatingRequestDTO.size() );
+        }
+        if ( seatingRequestDTO.orientation() != null ) {
+            seating.setOrientation( seatingRequestDTO.orientation() );
         }
 
         return seating;

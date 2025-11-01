@@ -2,6 +2,8 @@ package com.progra3.cafeteria_api.repository;
 
 import com.progra3.cafeteria_api.model.entity.Seating;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -14,4 +16,7 @@ public interface SeatingRepository extends JpaRepository<Seating, Long> {
     Optional<Seating> findByIdAndBusiness_Id(Long id, Long businessId);
 
     List<Seating> findByBusiness_Id(Long businessId);
+
+    @Query("SELECT s FROM Seating s WHERE s.business.id = :businessId AND s.deleted = false")
+    List<Seating> findActiveByBusiness_Id(@Param("businessId") Long businessId);
 }
