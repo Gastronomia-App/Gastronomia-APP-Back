@@ -42,14 +42,13 @@ public class ProductService implements IProductService {
         Product product = productMapper.toEntity(productRequestDTO);
         product.setBusiness(employeeContext.getCurrentBusiness());
         product.setCategory(category);
-        product.setDeleted(false);
 
         if (productRequestDTO.components() != null) {
             productRequestDTO.components().forEach(dto -> addComponent(product, dto));
         }
 
-        if (productRequestDTO.productGroupIds() != null) {
-            productRequestDTO.productGroupIds().forEach(groupId -> {
+        if (productRequestDTO.productGroups() != null) {
+            productRequestDTO.productGroups().forEach(groupId -> {
                 ProductGroup group = productGroupService.getEntityById(groupId);
                 product.getProductGroups().add(group);
             });
@@ -85,7 +84,7 @@ public class ProductService implements IProductService {
     public ProductResponseDTO updateProduct(Long id, ProductRequestDTO productRequestDTO) {
         Category category = categoryService.getEntityById(productRequestDTO.categoryId());
         Product updatedProduct = getEntityById(id);
-        updatedProduct = productMapper.updateProductFromDTO(updatedProduct, productRequestDTO);
+        productMapper.updateProductFromDTO(updatedProduct, productRequestDTO);
         updatedProduct.setCategory(category);
 
         return productMapper.toDTO(productRepository.save(updatedProduct));
@@ -101,9 +100,8 @@ public class ProductService implements IProductService {
     @Override
     public ProductResponseDTO deleteProduct(Long id) {
         Product product = getEntityById(id);
-        product.setDeleted(true);
-
-        return productMapper.toDTO(productRepository.save(product));
+        productRepository.delete(product);
+        return productMapper.toDTO(product);
     }
 
     @Override

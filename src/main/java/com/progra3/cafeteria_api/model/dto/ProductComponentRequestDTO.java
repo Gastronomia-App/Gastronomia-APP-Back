@@ -6,6 +6,9 @@ import jakarta.validation.constraints.Positive;
 
 public record ProductComponentRequestDTO(
 
+        @Schema(description = "Unique identifier of the component", example = "12")
+        Long id,
+
         @Schema(description = "ID of the product that is a component", example = "5")
         @NotNull(message = "Product ID is required")
         Long productId,

@@ -15,7 +15,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("SELECT p FROM Product p WHERE " +
             "p.business.id = :businessId AND " +
-            "p.deleted = false AND" +
             "(:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
             "(:categoryId IS NULL OR p.category.id = :categoryId) AND " +
             "(:minStock IS NULL OR p.stock <= :minStock) AND " +

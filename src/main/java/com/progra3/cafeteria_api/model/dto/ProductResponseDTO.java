@@ -32,8 +32,8 @@ public record ProductResponseDTO(
         @Schema(description = "Category this product belongs to")
         CategoryResponseDTO category,
 
-        @Schema(description = "Indicates if the product is logically deleted", example = "false")
-        Boolean deleted,
+        @Schema(description = "Indicates if the product is active", example = "true")
+        Boolean active,
 
         @Schema(description = "Indicates if the product is a composite product (made of components)", example = "false")
         Boolean composite,

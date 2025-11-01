@@ -65,7 +65,7 @@ public class CategoryService implements ICategoryService {
     public void deleteCategory(Long id) {
         Category category = categoryRepository.findByIdAndBusiness_Id(id, employeeContext.getCurrentBusinessId())
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID " + id + " for the current business."));
-        if (category.getProducts().stream().anyMatch(product -> !product.getDeleted())) {
+        if (!category.getProducts().isEmpty()) {
             throw new CategoryCannotBeDeletedException("Cannot delete category with associated products.");
         }
         categoryRepository.delete(category);

@@ -21,7 +21,7 @@ public interface ProductMapper {
 
     @Mapping(target = "components", ignore = true)
     @Mapping(target = "productGroups", ignore = true)
-    Product updateProductFromDTO(@MappingTarget Product product, ProductRequestDTO dto);
+    void updateProductFromDTO(@MappingTarget Product product, ProductRequestDTO dto);
 
     @Named("categoryWithoutProducts")
     default com.progra3.cafeteria_api.model.dto.CategoryResponseDTO categoryWithoutProducts(com.progra3.cafeteria_api.model.entity.Category category) {
