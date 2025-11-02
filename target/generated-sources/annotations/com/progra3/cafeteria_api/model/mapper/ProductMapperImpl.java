@@ -1,11 +1,11 @@
 package com.progra3.cafeteria_api.model.mapper;
 
+import com.progra3.cafeteria_api.model.dto.CategoryResponseDTO;
 import com.progra3.cafeteria_api.model.dto.ProductComponentResponseDTO;
 import com.progra3.cafeteria_api.model.dto.ProductGroupResponseDTO;
 import com.progra3.cafeteria_api.model.dto.ProductOptionResponseDTO;
 import com.progra3.cafeteria_api.model.dto.ProductRequestDTO;
 import com.progra3.cafeteria_api.model.dto.ProductResponseDTO;
-import com.progra3.cafeteria_api.model.entity.Category;
 import com.progra3.cafeteria_api.model.entity.Product;
 import com.progra3.cafeteria_api.model.entity.ProductComponent;
 import com.progra3.cafeteria_api.model.entity.ProductGroup;
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-10-29T14:44:58-0300",
+    date = "2025-11-02T20:05:54-0300",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 25 (Oracle Corporation)"
 )
 @Component
@@ -34,7 +34,7 @@ public class ProductMapperImpl implements ProductMapper {
             return null;
         }
 
-        Integer categoryId = null;
+        CategoryResponseDTO category = null;
         Long id = null;
         String name = null;
         String description = null;
@@ -42,15 +42,12 @@ public class ProductMapperImpl implements ProductMapper {
         Double cost = null;
         Boolean controlStock = null;
         Integer stock = null;
-        Boolean deleted = null;
+        Boolean active = null;
         Boolean composite = null;
         List<ProductComponentResponseDTO> components = null;
         List<ProductGroupResponseDTO> productGroups = null;
 
-        Long id1 = productCategoryId( product );
-        if ( id1 != null ) {
-            categoryId = id1.intValue();
-        }
+        category = categoryWithoutProducts( product.getCategory() );
         id = product.getId();
         name = product.getName();
         description = product.getDescription();
@@ -58,12 +55,12 @@ public class ProductMapperImpl implements ProductMapper {
         cost = product.getCost();
         controlStock = product.isControlStock();
         stock = product.getStock();
-        deleted = product.getDeleted();
+        active = product.isActive();
         composite = product.isComposite();
         components = productComponentSetToProductComponentResponseDTOList( product.getComponents() );
         productGroups = productGroupSetToProductGroupResponseDTOList( product.getProductGroups() );
 
-        ProductResponseDTO productResponseDTO = new ProductResponseDTO( id, name, description, price, cost, controlStock, stock, categoryId, deleted, composite, components, productGroups );
+        ProductResponseDTO productResponseDTO = new ProductResponseDTO( id, name, description, price, cost, controlStock, stock, category, active, composite, components, productGroups );
 
         return productResponseDTO;
     }
@@ -94,6 +91,9 @@ public class ProductMapperImpl implements ProductMapper {
         product.setDescription( dto.description() );
         product.setPrice( dto.price() );
         product.setCost( dto.cost() );
+        if ( dto.active() != null ) {
+            product.setActive( dto.active() );
+        }
         product.setStock( dto.stock() );
         if ( dto.controlStock() != null ) {
             product.setControlStock( dto.controlStock() );
@@ -103,9 +103,9 @@ public class ProductMapperImpl implements ProductMapper {
     }
 
     @Override
-    public Product updateProductFromDTO(Product product, ProductRequestDTO dto) {
+    public void updateProductFromDTO(Product product, ProductRequestDTO dto) {
         if ( dto == null ) {
-            return product;
+            return;
         }
 
         if ( dto.name() != null ) {
@@ -120,29 +120,15 @@ public class ProductMapperImpl implements ProductMapper {
         if ( dto.cost() != null ) {
             product.setCost( dto.cost() );
         }
+        if ( dto.active() != null ) {
+            product.setActive( dto.active() );
+        }
         if ( dto.stock() != null ) {
             product.setStock( dto.stock() );
         }
         if ( dto.controlStock() != null ) {
             product.setControlStock( dto.controlStock() );
         }
-
-        return product;
-    }
-
-    private Long productCategoryId(Product product) {
-        if ( product == null ) {
-            return null;
-        }
-        Category category = product.getCategory();
-        if ( category == null ) {
-            return null;
-        }
-        Long id = category.getId();
-        if ( id == null ) {
-            return null;
-        }
-        return id;
     }
 
     protected List<ProductComponentResponseDTO> productComponentSetToProductComponentResponseDTOList(Set<ProductComponent> set) {

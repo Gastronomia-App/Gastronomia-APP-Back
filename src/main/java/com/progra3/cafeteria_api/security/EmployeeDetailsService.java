@@ -23,6 +23,16 @@ public class EmployeeDetailsService implements UserDetailsService {
         Employee employee = employeeRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Employee not found"));
 
+        // Validar que el empleado no esté eliminado
+        if (employee.getDeleted()) {
+            throw new UsernameNotFoundException("Employee account is disabled");
+        }
+
+        // Validar que el negocio del empleado no esté eliminado
+        if (employee.getBusiness().getDeleted()) {
+            throw new UsernameNotFoundException("Business account is disabled");
+        }
+
         return new EmployeeDetails(
                 username,
                 employee.getPassword(),

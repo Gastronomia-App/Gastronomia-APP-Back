@@ -72,6 +72,20 @@ public class BusinessController {
                 .body(responseDTO);
     }
 
+    @Operation(summary = "Get my business", description = "Retrieves the business associated with the currently authenticated user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Business found successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = BusinessResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Business not found for the current user", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - User not authenticated", content = @Content)
+    })
+    @GetMapping("/me")
+    public ResponseEntity<BusinessResponseDTO> getMyBusiness() {
+        BusinessResponseDTO responseDTO = businessService.getBusinessForCurrentUser();
+        return ResponseEntity.ok(responseDTO);
+    }
+
     @Operation(summary = "Get business by ID", description = "Retrieves a business by its unique identifier")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Business found successfully",
@@ -85,13 +99,14 @@ public class BusinessController {
         return ResponseEntity.ok(responseDTO);
     }
 
-    @Operation(summary = "Update business", description = "Updates the information of an existing business")
+    @Operation(summary = "Update business", description = "Updates the information of an existing business. Only the owner of the business can perform this action.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Business updated successfully",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = BusinessResponseDTO.class))),
             @ApiResponse(responseCode = "404", description = "Business not found", content = @Content),
-            @ApiResponse(responseCode = "400", description = "Invalid request data", content = @Content)
+            @ApiResponse(responseCode = "400", description = "Invalid request data", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden - You don't have permission to modify this business", content = @Content)
     })
     @PutMapping("/{id}")
     public ResponseEntity<BusinessResponseDTO> update(
@@ -120,10 +135,11 @@ public class BusinessController {
         return ResponseEntity.ok(responseDTO);
     }
 
-    @Operation(summary = "Delete business", description = "Deletes a business from the system")
+    @Operation(summary = "Delete business", description = "Performs a soft delete on a business. Only the owner of the business can perform this action.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Business deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "Business not found", content = @Content)
+            @ApiResponse(responseCode = "404", description = "Business not found", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden - You don't have permission to delete this business", content = @Content)
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

@@ -3,6 +3,7 @@ package com.progra3.cafeteria_api.model.mapper;
 import com.progra3.cafeteria_api.model.dto.AddressResponseDTO;
 import com.progra3.cafeteria_api.model.dto.BusinessRequestDTO;
 import com.progra3.cafeteria_api.model.dto.BusinessResponseDTO;
+import com.progra3.cafeteria_api.model.dto.BusinessUpdateDTO;
 import com.progra3.cafeteria_api.model.entity.Business;
 import javax.annotation.processing.Generated;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,8 +11,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-06-17T00:03:10-0300",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 24.0.1 (Oracle Corporation)"
+    date = "2025-11-02T20:05:54-0300",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 25 (Oracle Corporation)"
 )
 @Component
 public class BusinessMapperImpl implements BusinessMapper {
@@ -56,5 +57,22 @@ public class BusinessMapperImpl implements BusinessMapper {
         business.setOwner( employeeMapper.toEntity( dto.owner() ) );
 
         return business;
+    }
+
+    @Override
+    public void updateBusinessFromDTO(BusinessUpdateDTO dto, Business business) {
+        if ( dto == null ) {
+            return;
+        }
+
+        if ( dto.name() != null ) {
+            business.setName( dto.name() );
+        }
+        if ( dto.cuit() != null ) {
+            business.setCuit( dto.cuit() );
+        }
+        if ( dto.address() != null ) {
+            business.setAddress( addressMapper.toEntity( dto.address() ) );
+        }
     }
 }
