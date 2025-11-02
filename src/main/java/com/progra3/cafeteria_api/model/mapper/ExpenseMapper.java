@@ -11,7 +11,19 @@ public interface ExpenseMapper {
     @Mapping(target = "date", source = "dateTime")
     ExpenseResponseDTO toDTO(Expense expense);
 
+    @Mapping(target = "dateTime", source = "dateTime")
+    @Mapping(target = "supplier", ignore = true)
+    @Mapping(target = "business", ignore = true)
+    @Mapping(target = "audit", ignore = true)
+    @Mapping(target = "deleted", ignore = true)
+    @Mapping(target = "id", ignore = true)
     Expense toEntity(ExpenseRequestDTO expenseRequestDTO);
 
+    @Mapping(target = "dateTime", source = "dateTime")
+    @Mapping(target = "supplier", ignore = true)
+    @Mapping(target = "business", ignore = true)
+    @Mapping(target = "audit", ignore = true)
+    @Mapping(target = "deleted", ignore = true)
+    @Mapping(target = "id", ignore = true)
     void updateExpenseFromDTO(ExpenseUpdateDTO expenseUpdateDTO, @MappingTarget Expense expense);
 }
