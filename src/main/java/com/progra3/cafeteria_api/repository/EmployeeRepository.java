@@ -18,7 +18,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long>, JpaSp
 
     @Query("SELECT e FROM Employee e WHERE " +
             "e.business.id = :businessId AND " +
-            "e.deleted = false AND" +
             "(:name IS NULL OR LOWER(e.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
             "(:lastName IS NULL OR LOWER(e.lastName) LIKE LOWER(CONCAT('%', :lastName, '%'))) AND " +
             "(:dni IS NULL OR e.dni LIKE CONCAT('%', :dni, '%')) AND " +

@@ -1,11 +1,15 @@
 package com.progra3.cafeteria_api.model.mapper;
 
 import com.progra3.cafeteria_api.model.dto.ProductComponentResponseDTO;
+import com.progra3.cafeteria_api.model.dto.ProductGroupResponseDTO;
+import com.progra3.cafeteria_api.model.dto.ProductOptionResponseDTO;
 import com.progra3.cafeteria_api.model.dto.ProductRequestDTO;
 import com.progra3.cafeteria_api.model.dto.ProductResponseDTO;
 import com.progra3.cafeteria_api.model.entity.Category;
 import com.progra3.cafeteria_api.model.entity.Product;
 import com.progra3.cafeteria_api.model.entity.ProductComponent;
+import com.progra3.cafeteria_api.model.entity.ProductGroup;
+import com.progra3.cafeteria_api.model.entity.ProductOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -15,8 +19,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-06-16T20:41:22-0300",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 24.0.1 (Oracle Corporation)"
+    date = "2025-10-29T14:44:58-0300",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 25 (Oracle Corporation)"
 )
 @Component
 public class ProductMapperImpl implements ProductMapper {
@@ -30,7 +34,7 @@ public class ProductMapperImpl implements ProductMapper {
             return null;
         }
 
-        String categoryName = null;
+        Integer categoryId = null;
         Long id = null;
         String name = null;
         String description = null;
@@ -41,9 +45,12 @@ public class ProductMapperImpl implements ProductMapper {
         Boolean deleted = null;
         Boolean composite = null;
         List<ProductComponentResponseDTO> components = null;
-        List<String> productGroups = null;
+        List<ProductGroupResponseDTO> productGroups = null;
 
-        categoryName = productCategoryName( product );
+        Long id1 = productCategoryId( product );
+        if ( id1 != null ) {
+            categoryId = id1.intValue();
+        }
         id = product.getId();
         name = product.getName();
         description = product.getDescription();
@@ -54,9 +61,9 @@ public class ProductMapperImpl implements ProductMapper {
         deleted = product.getDeleted();
         composite = product.isComposite();
         components = productComponentSetToProductComponentResponseDTOList( product.getComponents() );
-        productGroups = map( product.getProductGroups() );
+        productGroups = productGroupSetToProductGroupResponseDTOList( product.getProductGroups() );
 
-        ProductResponseDTO productResponseDTO = new ProductResponseDTO( id, name, description, price, cost, controlStock, stock, categoryName, deleted, composite, components, productGroups );
+        ProductResponseDTO productResponseDTO = new ProductResponseDTO( id, name, description, price, cost, controlStock, stock, categoryId, deleted, composite, components, productGroups );
 
         return productResponseDTO;
     }
@@ -123,7 +130,7 @@ public class ProductMapperImpl implements ProductMapper {
         return product;
     }
 
-    private String productCategoryName(Product product) {
+    private Long productCategoryId(Product product) {
         if ( product == null ) {
             return null;
         }
@@ -131,11 +138,11 @@ public class ProductMapperImpl implements ProductMapper {
         if ( category == null ) {
             return null;
         }
-        String name = category.getName();
-        if ( name == null ) {
+        Long id = category.getId();
+        if ( id == null ) {
             return null;
         }
-        return name;
+        return id;
     }
 
     protected List<ProductComponentResponseDTO> productComponentSetToProductComponentResponseDTOList(Set<ProductComponent> set) {
@@ -146,6 +153,74 @@ public class ProductMapperImpl implements ProductMapper {
         List<ProductComponentResponseDTO> list = new ArrayList<ProductComponentResponseDTO>( set.size() );
         for ( ProductComponent productComponent : set ) {
             list.add( productComponentMapper.toDTO( productComponent ) );
+        }
+
+        return list;
+    }
+
+    protected ProductOptionResponseDTO productOptionToProductOptionResponseDTO(ProductOption productOption) {
+        if ( productOption == null ) {
+            return null;
+        }
+
+        Long id = null;
+        Integer maxQuantity = null;
+        Double priceIncrease = null;
+
+        id = productOption.getId();
+        maxQuantity = productOption.getMaxQuantity();
+        priceIncrease = productOption.getPriceIncrease();
+
+        Long productId = null;
+
+        ProductOptionResponseDTO productOptionResponseDTO = new ProductOptionResponseDTO( id, productId, maxQuantity, priceIncrease );
+
+        return productOptionResponseDTO;
+    }
+
+    protected List<ProductOptionResponseDTO> productOptionListToProductOptionResponseDTOList(List<ProductOption> list) {
+        if ( list == null ) {
+            return null;
+        }
+
+        List<ProductOptionResponseDTO> list1 = new ArrayList<ProductOptionResponseDTO>( list.size() );
+        for ( ProductOption productOption : list ) {
+            list1.add( productOptionToProductOptionResponseDTO( productOption ) );
+        }
+
+        return list1;
+    }
+
+    protected ProductGroupResponseDTO productGroupToProductGroupResponseDTO(ProductGroup productGroup) {
+        if ( productGroup == null ) {
+            return null;
+        }
+
+        Long id = null;
+        String name = null;
+        Integer minQuantity = null;
+        Integer maxQuantity = null;
+        List<ProductOptionResponseDTO> options = null;
+
+        id = productGroup.getId();
+        name = productGroup.getName();
+        minQuantity = productGroup.getMinQuantity();
+        maxQuantity = productGroup.getMaxQuantity();
+        options = productOptionListToProductOptionResponseDTOList( productGroup.getOptions() );
+
+        ProductGroupResponseDTO productGroupResponseDTO = new ProductGroupResponseDTO( id, name, minQuantity, maxQuantity, options );
+
+        return productGroupResponseDTO;
+    }
+
+    protected List<ProductGroupResponseDTO> productGroupSetToProductGroupResponseDTOList(Set<ProductGroup> set) {
+        if ( set == null ) {
+            return null;
+        }
+
+        List<ProductGroupResponseDTO> list = new ArrayList<ProductGroupResponseDTO>( set.size() );
+        for ( ProductGroup productGroup : set ) {
+            list.add( productGroupToProductGroupResponseDTO( productGroup ) );
         }
 
         return list;
