@@ -1,10 +1,13 @@
 package com.progra3.cafeteria_api.model.entity;
 
+import com.progra3.cafeteria_api.model.enums.SeatingShape;
+import com.progra3.cafeteria_api.model.enums.SeatingSize;
 import com.progra3.cafeteria_api.model.enums.SeatingStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.List;
+
 
 @Entity
 @Table(name = "seating")
@@ -14,12 +17,27 @@ import java.util.List;
 @Setter
 @Builder
 public class Seating {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
     private Integer number;
+
+    @Column(nullable = false)
+    private Integer posX;
+
+    @Column(nullable = false)
+    private Integer posY;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SeatingShape shape;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SeatingSize size;
 
     @OneToMany(mappedBy = "seating", cascade = CascadeType.ALL)
     private List<Order> orders;
