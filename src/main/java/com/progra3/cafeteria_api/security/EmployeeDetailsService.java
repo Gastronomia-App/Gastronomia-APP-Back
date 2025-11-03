@@ -20,7 +20,7 @@ public class EmployeeDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-        Employee employee = employeeRepository.findByUsername(username)
+        Employee employee = employeeRepository.findByUsernameWithBusiness(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Employee not found"));
 
         // Validar que el empleado no esté eliminado

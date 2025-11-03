@@ -32,6 +32,10 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long>, JpaSp
                                      Pageable pageable);
 
     Optional<Employee> findByUsername(String username);
+
+    @Query("SELECT e FROM Employee e LEFT JOIN FETCH e.business WHERE e.username = :username")
+    Optional<Employee> findByUsernameWithBusiness(@Param("username") String username);
+
     Optional<Employee> findByEmailAndBusiness_Id(String email, Long businessId);
     Employee findByDniAndBusiness_Id(String dni, Long businessId);
 
