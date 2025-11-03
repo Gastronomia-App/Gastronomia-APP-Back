@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.List;
 
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/seating")
@@ -28,9 +29,12 @@ public class SeatingController {
 
     private final ISeatingService seatingService;
 
-    @Operation(summary = "Create a new seating", description = "Creates a new seating entry")
+    @Operation(
+            summary = "Create or reactivate a seating",
+            description = "Creates a new seating or reactivates a logically deleted one if the number already exists."
+    )
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Seating created successfully"),
+            @ApiResponse(responseCode = "201", description = "Seating created or reactivated successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content)
     })
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
@@ -48,7 +52,7 @@ public class SeatingController {
                 .body(seatingResponseDTO);
     }
 
-    @Operation(summary = "Get all seatings", description = "Retrieves all seating entries")
+    @Operation(summary = "Get all seatings", description = "Retrieves all active seating entries")
     @ApiResponse(responseCode = "200", description = "List of seatings retrieved successfully")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'WAITER')")
     @GetMapping
@@ -82,7 +86,7 @@ public class SeatingController {
         return ResponseEntity.ok(seatingService.getByNumber(number));
     }
 
-    @Operation(summary = "Update a seating entry", description = "Updates the seating number of an existing seating")
+    @Operation(summary = "Update a seating entry", description = "Updates an existing active seating")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Seating updated successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content),
@@ -103,7 +107,7 @@ public class SeatingController {
         return ResponseEntity.ok(seatingResponseDTO);
     }
 
-    @Operation(summary = "Delete a seating entry", description = "Deletes a seating entry by its ID")
+    @Operation(summary = "Delete a seating entry", description = "Performs a logical deletion of a seating entry by its ID")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Seating deleted successfully"),
             @ApiResponse(responseCode = "404", description = "Seating not found", content = @Content)
@@ -116,7 +120,7 @@ public class SeatingController {
         return ResponseEntity.ok(seatingService.delete(id));
     }
 
-    @Operation(summary = "Update seating position", description = "Updates the position of a seating entry")
+    @Operation(summary = "Update seating position", description = "Updates the position (X, Y) of a seating entry")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Seating position updated successfully"),
             @ApiResponse(responseCode = "404", description = "Seating not found", content = @Content)
@@ -130,7 +134,4 @@ public class SeatingController {
         SeatingResponseDTO updated = seatingService.updatePosition(id, request);
         return ResponseEntity.ok(updated);
     }
-
-
-
 }

@@ -1,6 +1,5 @@
 package com.progra3.cafeteria_api.model.entity;
 
-import com.progra3.cafeteria_api.model.enums.SeatingOrientation;
 import com.progra3.cafeteria_api.model.enums.SeatingShape;
 import com.progra3.cafeteria_api.model.enums.SeatingSize;
 import com.progra3.cafeteria_api.model.enums.SeatingStatus;
@@ -32,11 +31,6 @@ public class Seating {
     @Column(nullable = false)
     private Integer posY;
 
-    @Column(nullable = false)
-    private Integer width = 1;
-    @Column(nullable = false)
-    private Integer height = 1;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private SeatingShape shape;
@@ -44,10 +38,6 @@ public class Seating {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private SeatingSize size;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private SeatingOrientation orientation;
 
     @OneToMany(mappedBy = "seating", cascade = CascadeType.ALL)
     private List<Order> orders;

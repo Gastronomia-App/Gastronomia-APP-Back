@@ -1,6 +1,5 @@
 package com.progra3.cafeteria_api.model.dto;
 
-import com.progra3.cafeteria_api.model.enums.SeatingOrientation;
 import com.progra3.cafeteria_api.model.enums.SeatingShape;
 import com.progra3.cafeteria_api.model.enums.SeatingSize;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -32,10 +31,5 @@ public record SeatingRequestDTO(
 
         @Schema(description = "Size of the seating (SMALL/MEDIUM/LARGE)", example = "SMALL", required = true)
         @NotNull(message = "Size cannot be null")
-        SeatingSize size,
-
-        @Schema(description = "Orientation of the seating (HORIZONTAL/VERTICAL)", example = "HORIZONTAL", required = true)
-        @NotNull(message = "Orientation cannot be null")
-        SeatingOrientation orientation
-
+        SeatingSize size
 ) {}

@@ -53,7 +53,6 @@ com\progra3\cafeteria_api\validation\ValidOrderRequestValidator.class
 com\progra3\cafeteria_api\service\port\IOrderService.class
 com\progra3\cafeteria_api\exception\seating\SeatingModificationNotAllowed.class
 com\progra3\cafeteria_api\model\dto\ExpenseUpdateDTO.class
-com\progra3\cafeteria_api\model\enums\SeatingOrientation.class
 com\progra3\cafeteria_api\exception\user\EmployeeCannotBeDeletedException.class
 com\progra3\cafeteria_api\model\dto\ProductComponentResponseDTO.class
 com\progra3\cafeteria_api\service\port\ISeatingService.class

@@ -19,4 +19,5 @@ public interface SeatingRepository extends JpaRepository<Seating, Long> {
 
     @Query("SELECT s FROM Seating s WHERE s.business.id = :businessId AND s.deleted = false")
     List<Seating> findActiveByBusiness_Id(@Param("businessId") Long businessId);
+
 }

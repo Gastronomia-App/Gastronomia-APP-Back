@@ -1,6 +1,5 @@
 package com.progra3.cafeteria_api.model.dto;
 
-import com.progra3.cafeteria_api.model.enums.SeatingOrientation;
 import com.progra3.cafeteria_api.model.enums.SeatingShape;
 import com.progra3.cafeteria_api.model.enums.SeatingSize;
 import com.progra3.cafeteria_api.model.enums.SeatingStatus;
@@ -22,20 +21,11 @@ public record SeatingResponseDTO(
         @Schema(description = "Y position in the board (row)", example = "5")
         Integer posY,
 
-        @Schema(description = "Width in grid cells", example = "2")
-        Integer width,
-
-        @Schema(description = "Height in grid cells", example = "1")
-        Integer height,
-
         @Schema(description = "Shape of the seating", example = "SQUARE")
         SeatingShape shape,
 
         @Schema(description = "Size of the seating", example = "SMALL")
         SeatingSize size,
-
-        @Schema(description = "Orientation of the seating", example = "HORIZONTAL")
-        SeatingOrientation orientation,
 
         @Schema(description = "Current status of the seating", example = "FREE")
         SeatingStatus status,

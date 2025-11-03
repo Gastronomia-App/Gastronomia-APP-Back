@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Optional;
 import java.awt.*;
 
-
 @Service
 @RequiredArgsConstructor
 public class SeatingService implements ISeatingService {
@@ -30,27 +29,37 @@ public class SeatingService implements ISeatingService {
     private final EmployeeContext employeeContext;
     private final SeatingMapper seatingMapper;
 
+
     @Override
     public SeatingResponseDTO create(SeatingRequestDTO dto) {
-        Seating seating = seatingMapper.toEntity(dto);
-        seating.setBusiness(employeeContext.getCurrentBusiness());
+        Long businessId = employeeContext.getCurrentBusinessId();
 
-        seatingRepository.findByNumberAndBusiness_Id(seating.getNumber(), employeeContext.getCurrentBusinessId())
-                .ifPresent(existing -> {
-                    if (!existing.getDeleted()) {
-                        throw new SeatingAlreadyExistsException(seating.getNumber());
-                    }
-                });
+        Optional<Seating> existingOpt = seatingRepository.findByNumberAndBusiness_Id(dto.number(), businessId);
 
-        seating.setWidth(1);
-        seating.setHeight(1);
+        Seating seating;
 
-        if (positionTaken(seating, null)) {
-            throw new SeatingModificationNotAllowed("There is already a seating in this position.");
+        if (existingOpt.isPresent()) {
+            Seating existing = existingOpt.get();
+
+            if (!existing.getDeleted()) {
+                throw new SeatingAlreadyExistsException(dto.number());
+            }
+
+            seating = existing;
+            seatingMapper.updateSeatingFromDTO(seating, dto);
+            seating.setDeleted(false);
+            seating.setStatus(SeatingStatus.FREE);
+
+        } else {
+            seating = seatingMapper.toEntity(dto);
+            seating.setBusiness(employeeContext.getCurrentBusiness());
+            seating.setStatus(SeatingStatus.FREE);
+            seating.setDeleted(false);
         }
 
-        seating.setStatus(SeatingStatus.FREE);
-        seating.setDeleted(false);
+        if (positionTaken(seating, seating.getId())) {
+            throw new SeatingModificationNotAllowed("There is already a seating in this position.");
+        }
 
         return seatingMapper.toDTO(seatingRepository.save(seating));
     }
@@ -81,10 +90,19 @@ public class SeatingService implements ISeatingService {
         Seating seating = getEntityById(id);
         validateSeating(seating);
 
-        seatingMapper.updateSeatingFromDTO(seating, dto);
+        seatingRepository.findByNumberAndBusiness_Id(dto.number(), employeeContext.getCurrentBusinessId())
+                .ifPresent(existing -> {
+                    boolean isSameSeating = existing.getId().equals(seating.getId());
+                    if (!isSameSeating) {
+                        if (!existing.getDeleted()) {
+                            throw new SeatingAlreadyExistsException(dto.number());
+                        } else {
+                            throw new SeatingModificationNotAllowed("Cannot use a number from a deleted seating.");
+                        }
+                    }
+                });
 
-        seating.setWidth(1);
-        seating.setHeight(1);
+        seatingMapper.updateSeatingFromDTO(seating, dto);
 
         if (positionTaken(seating, seating.getId())) {
             throw new SeatingModificationNotAllowed("There is already a seating in this position.");
@@ -150,6 +168,8 @@ public class SeatingService implements ISeatingService {
     public SeatingResponseDTO updatePosition(Long id, SeatingPositionRequestDTO request) {
         Seating seating = seatingRepository.findByIdAndBusiness_Id(id, employeeContext.getCurrentBusinessId())
                 .orElseThrow(() -> new SeatingNotFoundException(id));
+
+        validateSeating(seating);
 
         seating.setPosX(request.posX());
         seating.setPosY(request.posY());
