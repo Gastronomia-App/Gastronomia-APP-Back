@@ -33,6 +33,10 @@ public record ProductRequestDTO(
         @Schema(description = "Cost price of the product", example = "100.0", minimum = "0.01")
         Double cost,
 
+        @NotNull(message = "Active status cannot be null")
+        @Schema(description = "Indicates if the product is active", example = "true")
+        Boolean active,
+
         @NotNull(message = "Control stock cannot be null")
         @Schema(description = "Indicates if stock control is enabled", example = "true", required = true)
         Boolean controlStock,
@@ -47,6 +51,6 @@ public record ProductRequestDTO(
 
         @Schema(description = "List of product group IDs this product belongs to",
                 example = "[1, 2, 3]")
-        List<Long> productGroupIds
+        List<Long> productGroups
 ) { }
 

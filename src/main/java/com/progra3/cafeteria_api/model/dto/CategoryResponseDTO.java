@@ -1,5 +1,7 @@
 package com.progra3.cafeteria_api.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
@@ -13,6 +15,12 @@ public record CategoryResponseDTO(
         @Schema(description = "Name of the category", example = "Beverages")
         String name,
 
-        @Schema(description = "List of products under this category")
+        @Schema(description = "Color associated with the category in HEX format",
+                example = "#FF5733")
+        @JsonProperty("color")
+        String color,
+
+        @Schema(description = "List of products under this category (only included when fetching categories)")
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         List<ProductResponseDTO> products
 ) { }

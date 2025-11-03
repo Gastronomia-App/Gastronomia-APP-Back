@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-02T18:11:33-0300",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 24.0.1 (Oracle Corporation)"
+    date = "2025-11-02T20:05:54-0300",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 25 (Oracle Corporation)"
 )
 @Component
 public class CategoryMapperImpl implements CategoryMapper {
@@ -28,13 +28,15 @@ public class CategoryMapperImpl implements CategoryMapper {
 
         Long id = null;
         String name = null;
+        String color = null;
         List<ProductResponseDTO> products = null;
 
         id = category.getId();
         name = category.getName();
+        color = category.getColor();
         products = productMapper.toDTOList( category.getProducts() );
 
-        CategoryResponseDTO categoryResponseDTO = new CategoryResponseDTO( id, name, products );
+        CategoryResponseDTO categoryResponseDTO = new CategoryResponseDTO( id, name, color, products );
 
         return categoryResponseDTO;
     }
@@ -48,6 +50,7 @@ public class CategoryMapperImpl implements CategoryMapper {
         Category category = new Category();
 
         category.setName( categoryRequestDTO.name() );
+        category.setColor( categoryRequestDTO.color() );
 
         return category;
     }

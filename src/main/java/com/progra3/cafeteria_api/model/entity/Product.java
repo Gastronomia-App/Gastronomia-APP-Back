@@ -4,9 +4,7 @@ import com.progra3.cafeteria_api.model.enums.CompositionType;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -41,15 +39,21 @@ public class Product {
     private Double cost;
 
     @Column
-    private Integer stock;
+    private boolean active;
 
-    @Column(nullable = false)
-    private Boolean deleted;
+    @Column
+    private Integer stock;
 
     @OneToMany(mappedBy = "parentProduct", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProductComponent> components = new HashSet<>();
 
-    @ManyToMany
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<ProductComponent> usedInProducts = new HashSet<>();
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<ProductOption> usedInProductOptions = new HashSet<>();
+
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "groups_by_products",
             joinColumns = @JoinColumn(name = "product_id"),

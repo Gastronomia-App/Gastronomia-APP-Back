@@ -7,6 +7,9 @@ public record ProductComponentResponseDTO(
         @Schema(description = "Unique identifier of the component", example = "12")
         Long id,
 
+        @Schema(description = "ID of the product that is a component", example = "5")
+        Long productId,
+
         @Schema(description = "Name of the product component", example = "Espresso Shot")
         String name,
 

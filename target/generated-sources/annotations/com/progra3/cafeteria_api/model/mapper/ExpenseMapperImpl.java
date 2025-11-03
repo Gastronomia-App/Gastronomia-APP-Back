@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-02T18:11:33-0300",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 24.0.1 (Oracle Corporation)"
+    date = "2025-11-02T20:05:54-0300",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 25 (Oracle Corporation)"
 )
 @Component
 public class ExpenseMapperImpl implements ExpenseMapper {
@@ -54,6 +54,7 @@ public class ExpenseMapperImpl implements ExpenseMapper {
 
         Expense expense = new Expense();
 
+        expense.setDateTime( expenseRequestDTO.dateTime() );
         expense.setAmount( expenseRequestDTO.amount() );
         expense.setComment( expenseRequestDTO.comment() );
         expense.setDateTime( expenseRequestDTO.dateTime() );
@@ -67,6 +68,9 @@ public class ExpenseMapperImpl implements ExpenseMapper {
             return;
         }
 
+        if ( expenseUpdateDTO.dateTime() != null ) {
+            expense.setDateTime( expenseUpdateDTO.dateTime() );
+        }
         if ( expenseUpdateDTO.amount() != null ) {
             expense.setAmount( expenseUpdateDTO.amount() );
         }

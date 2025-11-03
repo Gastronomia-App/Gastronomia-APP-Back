@@ -42,19 +42,8 @@ public class ProductService implements IProductService {
         Product product = productMapper.toEntity(productRequestDTO);
         product.setBusiness(employeeContext.getCurrentBusiness());
         product.setCategory(category);
-        product.setDeleted(false);
 
-        if (productRequestDTO.components() != null) {
-            productRequestDTO.components().forEach(dto -> addComponent(product, dto));
-        }
-
-        if (productRequestDTO.productGroupIds() != null) {
-            productRequestDTO.productGroupIds().forEach(groupId -> {
-                ProductGroup group = productGroupService.getEntityById(groupId);
-                product.getProductGroups().add(group);
-            });
-        }
-        adjustComposite(product);
+        updateProductRelationships(product, productRequestDTO);
 
         return productMapper.toDTO(productRepository.save(product));
     }
@@ -83,12 +72,15 @@ public class ProductService implements IProductService {
     @Transactional
     @Override
     public ProductResponseDTO updateProduct(Long id, ProductRequestDTO productRequestDTO) {
+        Product product = getEntityById(id);
         Category category = categoryService.getEntityById(productRequestDTO.categoryId());
-        Product updatedProduct = getEntityById(id);
-        updatedProduct = productMapper.updateProductFromDTO(updatedProduct, productRequestDTO);
-        updatedProduct.setCategory(category);
 
-        return productMapper.toDTO(productRepository.save(updatedProduct));
+        productMapper.updateProductFromDTO(product, productRequestDTO);
+        product.setCategory(category);
+
+        updateProductRelationships(product, productRequestDTO);
+
+        return productMapper.toDTO(productRepository.save(product));
     }
 
     @Transactional
@@ -101,9 +93,22 @@ public class ProductService implements IProductService {
     @Override
     public ProductResponseDTO deleteProduct(Long id) {
         Product product = getEntityById(id);
-        product.setDeleted(true);
+        ProductResponseDTO productDTO = productMapper.toDTO(product);
 
-        return productMapper.toDTO(productRepository.save(product));
+        // 1. Clear ProductGroups (ManyToMany relationship)
+        product.getProductGroups().forEach(group -> group.getUsedByProducts().remove(product));
+        product.getProductGroups().clear();
+
+        // 2. Clear usedInProductOptions (will cascade delete due to orphanRemoval = true)
+        product.getUsedInProductOptions().clear();
+
+        // 3. Clear usedInProducts (ProductComponents where this product is used)
+        product.getUsedInProducts().clear();
+
+        // 4. Delete the product (components will be deleted automatically due to orphanRemoval)
+        productRepository.delete(product);
+
+        return productDTO;
     }
 
     @Override
@@ -162,6 +167,82 @@ public class ProductService implements IProductService {
         adjustComposite(product);
 
         return productMapper.toDTO(productRepository.save(product));
+    }
+
+    private void updateProductRelationships(Product product, ProductRequestDTO productRequestDTO) {
+        updateComponents(product, productRequestDTO.components());
+        updateProductGroups(product, productRequestDTO.productGroups());
+        adjustComposite(product);
+    }
+
+    private void updateComponents(Product product, List<ProductComponentRequestDTO> componentDTOs) {
+        if (componentDTOs == null) {
+            componentDTOs = java.util.Collections.emptyList();
+        }
+
+        java.util.Set<Long> requestedIds = componentDTOs.stream()
+            .map(ProductComponentRequestDTO::id)
+            .filter(java.util.Objects::nonNull)
+            .collect(java.util.stream.Collectors.toSet());
+
+        // Remove components that were not sent (deleted)
+        product.getComponents().removeIf(component -> !requestedIds.contains(component.getId()));
+
+        // Update or create components
+        for (ProductComponentRequestDTO dto : componentDTOs) {
+            if (dto.id() != null) {
+                // Update existing component
+                updateExistingComponent(product, dto);
+            } else {
+                // Create new component
+                createNewComponent(product, dto);
+            }
+        }
+    }
+
+    private void updateExistingComponent(Product product, ProductComponentRequestDTO dto) {
+        product.getComponents().stream()
+            .filter(comp -> comp.getId().equals(dto.id()))
+            .findFirst()
+            .ifPresent(component -> {
+                component.setQuantity(dto.quantity());
+                // Update product reference if changed
+                if (!component.getProduct().getId().equals(dto.productId())) {
+                    Product newChildProduct = getEntityById(dto.productId());
+                    component.setProduct(newChildProduct);
+                }
+            });
+    }
+
+    private void createNewComponent(Product product, ProductComponentRequestDTO dto) {
+        Product childProduct = getEntityById(dto.productId());
+        ProductComponent newComponent = productComponentMapper.toEntity(dto);
+        newComponent.setProduct(childProduct);
+        newComponent.setParentProduct(product);
+        product.getComponents().add(newComponent);
+    }
+
+    private void updateProductGroups(Product product, List<Long> groupIds) {
+        if (groupIds == null) {
+            groupIds = java.util.Collections.emptyList();
+        }
+
+        java.util.Set<Long> requestedIds = new java.util.HashSet<>(groupIds);
+
+        // Remove groups that were not sent (deleted)
+        product.getProductGroups().removeIf(group -> !requestedIds.contains(group.getId()));
+
+        // Add new groups
+        java.util.Set<Long> currentIds = product.getProductGroups().stream()
+            .map(ProductGroup::getId)
+            .collect(java.util.stream.Collectors.toSet());
+
+        groupIds.stream()
+            .filter(id -> !currentIds.contains(id))
+            .forEach(id -> {
+                ProductGroup group = productGroupService.getEntityById(id);
+                product.getProductGroups().add(group);
+            });
     }
 
     private void addComponent(Product parentProduct, ProductComponentRequestDTO dto) {
