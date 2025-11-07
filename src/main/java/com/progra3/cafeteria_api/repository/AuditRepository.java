@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @Repository
 public interface AuditRepository extends JpaRepository<Audit, Long> {
-    Optional<Audit> findByBusiness_IdAndAuditStatus(Long business_id, AuditStatus status);
+    Optional<Audit> findByBusiness_IdAndAuditStatusAndDeletedFalse(Long business_id, AuditStatus status);
 
     @Query("SELECT a FROM Audit a WHERE " +
             "a.business.id = :businessId AND " +
@@ -23,6 +23,16 @@ public interface AuditRepository extends JpaRepository<Audit, Long> {
                                     @Param("endDate") LocalDateTime endDate,
                                     @Param("businessId") Long businessId,
                                     Pageable pageable);
+
+    @Query("SELECT a FROM Audit a WHERE " +
+            "a.business.id = :businessId AND " +
+            "(:startDate IS NULL OR a.closeTime >= :startDate) AND " +
+            "(:endDate IS NULL OR a.closeTime <= :endDate) AND " +
+            "(a.deleted = false OR a.deleted = true)")
+    Page<Audit> findByBusiness_IdIncludingDeleted(@Param("startDate") LocalDateTime startDate,
+                                                   @Param("endDate") LocalDateTime endDate,
+                                                   @Param("businessId") Long businessId,
+                                                   Pageable pageable);
 
     Optional<Audit> findByIdAndBusiness_Id(Long id, Long business_id);
 

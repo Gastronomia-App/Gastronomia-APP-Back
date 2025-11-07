@@ -194,4 +194,18 @@ public class AuditController {
             @Parameter(description = "ID of the audit to cancel") @PathVariable Long id) {
         return ResponseEntity.ok(auditService.cancel(id));
     }
+
+
+    @Operation(summary = "Delete an audit", description = "Permanently removes an audit entry from the system")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Audit deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Audit not found", content = @Content)
+    })
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER')")
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Void> deleteAudit(
+            @Parameter(description = "ID of the audit to delete") @PathVariable Long id) {
+        auditService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
 }

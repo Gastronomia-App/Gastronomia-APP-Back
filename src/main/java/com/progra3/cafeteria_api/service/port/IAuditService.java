@@ -16,6 +16,7 @@ public interface IAuditService {
     AuditResponseDTO getById(Long auditId);
     AuditResponseDTO finalize(Long auditId, AuditFinalizeRequestDTO dto);
     AuditResponseDTO cancel(Long auditId);
+    void delete(Long auditId);
 
     Audit getEntityById (Long auditId);
     Optional<Audit> getInProgressAudit();

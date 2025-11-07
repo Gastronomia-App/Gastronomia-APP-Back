@@ -81,7 +81,7 @@ public class AuditService implements IAuditService {
             endDateTime = endDate.atTime(LocalTime.MAX);
         }
 
-        Page<Audit> audits = auditRepository.findByBusiness_Id(
+        Page<Audit> audits = auditRepository.findByBusiness_IdIncludingDeleted(
                 startDateTime,
                 endDateTime,
                 employeeContext.getCurrentBusinessId(),
@@ -116,10 +116,25 @@ public class AuditService implements IAuditService {
     public AuditResponseDTO cancel(Long auditId) {
         Audit audit = getEntityById(auditId);
 
-        audit.setDeleted(true);
+        if (audit.getAuditStatus().equals(AuditStatus.FINALIZED)) {
+            throw new AuditModificationNotAllowedException(auditId, audit.getAuditStatus().getName());
+        }
+
         audit.setAuditStatus(AuditStatus.CANCELED);
 
         return auditMapper.toDTO(auditRepository.save(audit));
+    }
+
+    @Override
+    public void delete(Long auditId) {
+        Audit audit = getEntityById(auditId);
+
+        if (audit.getAuditStatus() == AuditStatus.IN_PROGRESS) {
+            audit.setAuditStatus(AuditStatus.CANCELED);
+        }
+
+        audit.setDeleted(true);
+        auditRepository.save(audit);
     }
 
     @Override
@@ -130,7 +145,7 @@ public class AuditService implements IAuditService {
 
     @Override
     public Optional<Audit> getInProgressAudit() {
-        return auditRepository.findByBusiness_IdAndAuditStatus(
+        return auditRepository.findByBusiness_IdAndAuditStatusAndDeletedFalse(
                 employeeContext.getCurrentBusinessId(),
                 AuditStatus.IN_PROGRESS
         );
@@ -140,14 +155,16 @@ public class AuditService implements IAuditService {
     public void recalculateAudit(Audit audit) {
         audit.setTotal(calculateTotal(audit));
         audit.setTotalExpensed(calculateExpenseTotal(audit));
-        audit.setBalanceGap(audit.getRealCash() - (audit.getTotal() + audit.getInitialCash() - audit.getTotalExpensed()));
+        audit.setBalanceGap(audit.getRealCash() - (audit.getTotal() - audit.getTotalExpensed()));
     }
 
     private double calculateTotal(Audit audit) {
-        return audit.getOrders().stream()
+        double ordersTotal = audit.getOrders().stream()
                 .filter(order -> order.getStatus().equals(OrderStatus.FINALIZED))
                 .mapToDouble(Order::getTotal)
                 .sum();
+
+        return audit.getInitialCash() + ordersTotal;
     }
 
     private double calculateExpenseTotal(Audit audit) {

@@ -38,6 +38,9 @@ public record AuditResponseDTO(
         @Schema(description = "Difference or gap in the balance", example = "0.0")
         Double balanceGap,
 
+        @Schema(description = "Real cash amount in the register", example = "1000.0")
+        Double realCash,
+
         @Schema(description = "Logical deletion flag", example = "false")
         Boolean deleted
 ) {}
