@@ -13,6 +13,7 @@ public record SeatingRequestDTO(
         @Schema(description = "Number of the seating (table or seat)", example = "15", required = true)
         @NotNull(message = "Number cannot be null")
         @PositiveOrZero(message = "Number must be positive or zero")
+        @Max(value = 9999, message = "Number must be less than or equal to 9999")
         Integer number,
 
         @Schema(description = "X position in the board (column)", example = "3", required = true)
