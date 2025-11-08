@@ -1,5 +1,6 @@
 package com.progra3.cafeteria_api.controller;
 
+import com.progra3.cafeteria_api.security.EmployeeContext;
 import com.progra3.cafeteria_api.service.helper.SortUtils;
 import com.progra3.cafeteria_api.model.dto.EmployeeRequestDTO;
 import com.progra3.cafeteria_api.model.dto.EmployeeResponseDTO;
@@ -123,6 +124,12 @@ public class EmployeeController {
     @GetMapping("/{id}")
     public ResponseEntity<EmployeeResponseDTO> getEmployeeById(
             @Parameter(description = "ID of the employee to retrieve") @PathVariable Long id) {
+        return ResponseEntity.ok(employeeService.getEmployeeById(id));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<EmployeeResponseDTO> getCurrentEmployee(EmployeeContext context) {
+        Long id = context.getCurrentEmployeeId();
         return ResponseEntity.ok(employeeService.getEmployeeById(id));
     }
 
