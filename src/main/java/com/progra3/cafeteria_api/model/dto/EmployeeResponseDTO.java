@@ -8,6 +8,9 @@ public record EmployeeResponseDTO(
         @Schema(description = "Unique identifier of the employee", example = "123")
         Long id,
 
+        @Schema(description = "Username of the employee", example = "juanperez")
+        String username,
+
         @Schema(description = "First name of the employee", example = "Juan")
         String name,
 

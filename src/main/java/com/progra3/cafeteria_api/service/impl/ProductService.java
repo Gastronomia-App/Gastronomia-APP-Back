@@ -78,8 +78,6 @@ public class ProductService implements IProductService {
         productMapper.updateProductFromDTO(product, productRequestDTO);
         product.setCategory(category);
 
-        updateProductRelationships(product, productRequestDTO);
-
         return productMapper.toDTO(productRepository.save(product));
     }
 

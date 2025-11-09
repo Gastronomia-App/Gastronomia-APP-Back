@@ -13,6 +13,9 @@ public record BusinessResponseDTO(
         String cuit,
 
         @Schema(description = "Address details of the business")
-        AddressResponseDTO address
+        AddressResponseDTO address,
+
+        @Schema(description = "Owner (admin) of the business")
+        EmployeeResponseDTO owner
 
 ) {}
