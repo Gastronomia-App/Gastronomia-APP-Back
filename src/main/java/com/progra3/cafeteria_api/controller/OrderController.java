@@ -3,6 +3,7 @@ package com.progra3.cafeteria_api.controller;
 import com.progra3.cafeteria_api.service.helper.SortUtils;
 import com.progra3.cafeteria_api.model.dto.*;
 import com.progra3.cafeteria_api.model.enums.OrderStatus;
+import com.progra3.cafeteria_api.model.enums.OrderType;
 import com.progra3.cafeteria_api.service.port.IOrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -89,7 +90,7 @@ public class OrderController {
 
     @Operation(
             summary = "Get all orders",
-            description = "Retrieves a paginated list of all orders in the system, optionally filtered by date range, customer, employee, or status."
+            description = "Retrieves a paginated list of all orders in the system, optionally filtered by date range, customer, employee, status, seating, order type, or total range."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "List of orders returned successfully",
@@ -112,16 +113,32 @@ public class OrderController {
             LocalDate endDate,
 
             @RequestParam(required = false)
-            @Schema(description = "ID of the customer to filter orders by", example = "123")
-            Long customerId,
+            @Schema(description = "Name of the customer to filter orders by", example = "Juan")
+            String customerName,
 
             @RequestParam(required = false)
-            @Schema(description = "ID of the employee to filter orders by", example = "45")
-            Long employeeId,
+            @Schema(description = "Name of the employee to filter orders by", example = "Maria")
+            String employeeName,
 
             @RequestParam(required = false)
             @Schema(description = "Status of the orders to filter by", example = "COMPLETED")
             OrderStatus status,
+
+            @RequestParam(required = false)
+            @Schema(description = "Number of the seating/table to filter orders by", example = "5")
+            Integer seatingNumber,
+
+            @RequestParam(required = false)
+            @Schema(description = "Type of the orders to filter by", example = "TABLE")
+            OrderType orderType,
+
+            @RequestParam(required = false)
+            @Schema(description = "Minimum total amount for filtering orders", example = "100.0")
+            Double minTotal,
+
+            @RequestParam(required = false)
+            @Schema(description = "Maximum total amount for filtering orders", example = "500.0")
+            Double maxTotal,
 
             @RequestParam(defaultValue = "0")
             @Schema(description = "Page number for pagination (0-based)", example = "0")
@@ -136,7 +153,7 @@ public class OrderController {
             String sort
     ) {
         Pageable pageable = PageRequest.of(page, size, sortUtils.buildSort(sort));
-        Page<OrderResponseDTO> orders = orderService.getOrders(startDate, endDate, customerId, employeeId, status, pageable);
+        Page<OrderResponseDTO> orders = orderService.getOrders(startDate, endDate, customerName, employeeName, status, seatingNumber, orderType, minTotal, maxTotal, pageable);
         return ResponseEntity.ok(orders);
     }
 

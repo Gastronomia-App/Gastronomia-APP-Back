@@ -4,6 +4,7 @@ import com.progra3.cafeteria_api.exception.order.OrderNotFoundException;
 import com.progra3.cafeteria_api.model.dto.*;
 import com.progra3.cafeteria_api.model.entity.Order;
 import com.progra3.cafeteria_api.model.enums.OrderStatus;
+import com.progra3.cafeteria_api.model.enums.OrderType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
@@ -13,7 +14,7 @@ import java.util.List;
 public interface IOrderService {
     OrderResponseDTO create(OrderRequestDTO dto);
     OrderResponseDTO getById(Long orderId) throws OrderNotFoundException;
-    Page<OrderResponseDTO> getOrders(LocalDate startDate, LocalDate endDate, Long customerId, Long employeeId, OrderStatus status, Pageable pageable);
+    Page<OrderResponseDTO> getOrders(LocalDate startDate, LocalDate endDate, String customerName, String employeeName, OrderStatus status, Integer seatingNumber, OrderType orderType, Double minTotal, Double maxTotal, Pageable pageable);
     OrderResponseDTO update(Long orderId, OrderRequestDTO dto);
     OrderResponseDTO updateDiscount(Long orderId, Integer discount);
     OrderResponseDTO updateStatus(Long orderId, OrderStatus status);

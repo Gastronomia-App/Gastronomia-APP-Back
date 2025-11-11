@@ -16,6 +16,7 @@ import com.progra3.cafeteria_api.model.mapper.ItemMapper;
 import com.progra3.cafeteria_api.model.mapper.OrderMapper;
 import com.progra3.cafeteria_api.model.entity.*;
 import com.progra3.cafeteria_api.model.enums.OrderStatus;
+import com.progra3.cafeteria_api.model.enums.OrderType;
 import com.progra3.cafeteria_api.model.enums.SeatingStatus;
 import com.progra3.cafeteria_api.repository.OrderRepository;
 import com.progra3.cafeteria_api.security.EmployeeContext;
@@ -66,7 +67,7 @@ public class OrderService implements IOrderService {
     }
 
     @Override
-    public Page<OrderResponseDTO> getOrders(LocalDate startDate, LocalDate endDate, Long customerId, Long employeeId, OrderStatus status, Pageable pageable) {
+    public Page<OrderResponseDTO> getOrders(LocalDate startDate, LocalDate endDate, String customerName, String employeeName, OrderStatus status, Integer seatingNumber, OrderType orderType, Double minTotal, Double maxTotal, Pageable pageable) {
         LocalDateTime startDateTime = null;
         LocalDateTime endDateTime = null;
 
@@ -80,9 +81,13 @@ public class OrderService implements IOrderService {
         Page<Order> orders = orderRepository.findByBusiness_Id(
                 startDateTime,
                 endDateTime,
-                customerId,
-                employeeId,
+                customerName,
+                employeeName,
                 status,
+                seatingNumber,
+                orderType,
+                minTotal,
+                maxTotal,
                 employeeContext.getCurrentBusinessId(),
                 pageable);
         return orders.map(orderMapper::toDTO);
