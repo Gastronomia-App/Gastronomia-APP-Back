@@ -26,6 +26,7 @@ public record OrderRequestDTO(
 
         @Schema(description = "Number of people for the order", example = "4")
         @Min(value = 1, message = "It must be at least 1 person")
+        @Max(value = 20, message = "It cannot exceed 15 people")
         Integer peopleCount
 
 ) {}

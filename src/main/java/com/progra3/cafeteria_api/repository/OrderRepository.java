@@ -19,7 +19,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT o FROM Order o WHERE " +
             "o.business.id = :businessId AND " +
-            "(:customerName IS NULL OR LOWER(CONCAT(o.customer.name, ' ', o.customer.lastName)) LIKE LOWER(CONCAT('%', :customerName, '%'))) AND " +
+            "(:customerName IS NULL OR (o.customer IS NOT NULL AND LOWER(CONCAT(o.customer.name, ' ', o.customer.lastName)) LIKE LOWER(CONCAT('%', :customerName, '%')))) AND " +
             "(:employeeName IS NULL OR LOWER(CONCAT(o.employee.name, ' ', o.employee.lastName)) LIKE LOWER(CONCAT('%', :employeeName, '%'))) AND " +
             "(:startDate IS NULL OR o.dateTime >= :startDate) AND " +
             "(:endDate IS NULL OR o.dateTime <= :endDate) AND " +
