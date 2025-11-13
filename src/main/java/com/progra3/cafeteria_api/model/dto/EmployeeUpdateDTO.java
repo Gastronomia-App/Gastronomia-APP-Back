@@ -44,7 +44,7 @@ public record EmployeeUpdateDTO(
         String username,
 
         @Schema(description = "Password for the employee account, minimum 8 characters", example = "password123", nullable = true)
-        @Size(min = 8, message = "Password must be at least 8 characters long")
+        @Size(min = 8, max = 20, message = "Password must be between 8 and 20 characters long")
         String password,
 
         @Schema(description = "Role assigned to the employee", example = "ADMIN", nullable = true)
