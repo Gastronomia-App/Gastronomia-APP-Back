@@ -182,4 +182,22 @@ public class EmployeeController {
         EmployeeResponseDTO response = employeeService.deleteEmployee(id);
         return ResponseEntity.ok(response);
     }
+
+    @Operation(
+            summary = "Update current employee",
+            description = "Allows the authenticated employee to update their own profile."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Profile updated successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = EmployeeResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid data", content = @Content)
+    })
+    @PatchMapping("/me")
+    public ResponseEntity<EmployeeResponseDTO> updateCurrentEmployee(
+            @RequestBody @Valid EmployeeUpdateDTO dto
+    ) {
+        EmployeeResponseDTO response = employeeService.updateCurrentEmployee(dto);
+        return ResponseEntity.ok(response);
+    }
 }

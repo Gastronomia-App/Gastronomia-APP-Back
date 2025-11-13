@@ -97,4 +97,47 @@ public class EmployeeService implements IEmployeeService{
 
         return employees.map(employeeMapper::toDTO);
     }
+
+    @Override
+    @Transactional
+    public EmployeeResponseDTO updateCurrentEmployee(EmployeeUpdateDTO dto) {
+        Long currentEmployeeId = employeeContext.getCurrentEmployeeId();
+
+        Employee employee = getEntityById(currentEmployeeId);
+
+        if (dto.name() != null && !dto.name().isBlank()) {
+            employee.setName(dto.name());
+        }
+
+        if (dto.lastName() != null && !dto.lastName().isBlank()) {
+            employee.setLastName(dto.lastName());
+        }
+
+        if (dto.email() != null) {
+            employee.setEmail(dto.email());
+        }
+
+        if (dto.phoneNumber() != null) {
+            employee.setPhoneNumber(dto.phoneNumber());
+        }
+
+        if (dto.username() != null && !dto.username().isBlank()) {
+            String currentUsername = employee.getUsername();
+            String domain = "";
+            int atIndex = currentUsername.indexOf('@');
+            if (atIndex != -1) {
+                domain = currentUsername.substring(atIndex);
+            }
+            employee.setUsername(dto.username() + domain);
+        }
+
+        if (dto.password() != null && !dto.password().isBlank()) {
+            employee.setPassword(passwordEncoder.encode(dto.password()));
+        }
+
+        Employee saved = employeeRepository.save(employee);
+
+        return employeeMapper.toDTO(saved);
+    }
+
 }

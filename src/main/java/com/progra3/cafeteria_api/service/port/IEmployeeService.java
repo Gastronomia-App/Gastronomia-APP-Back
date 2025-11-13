@@ -16,6 +16,6 @@ public interface IEmployeeService {
     Page<EmployeeResponseDTO> getEmployees(String name, String lastName, String dni, String email, Role role, Pageable pageable);
     EmployeeResponseDTO updateEmployee(Long id, EmployeeUpdateDTO updateDTO);
     EmployeeResponseDTO deleteEmployee(Long id);
-
+    EmployeeResponseDTO updateCurrentEmployee(EmployeeUpdateDTO dto);
     Employee getEntityById (Long employeeId);
 }

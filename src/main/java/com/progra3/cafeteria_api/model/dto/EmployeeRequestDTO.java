@@ -35,7 +35,7 @@ public record EmployeeRequestDTO(
 
         @Schema(description = "Username for the employee account", example = "username123")
         @NotBlank(message = "Username is required")
-        @Size(min = 5, max = 20, message = "Username must be between 5 and 20 characters")
+        @Size(min = 5, max = 50, message = "Username must be between 5 and 50 characters")
         String username,
 
         @Schema(description = "Password for the employee account", minLength = 8, required = true)

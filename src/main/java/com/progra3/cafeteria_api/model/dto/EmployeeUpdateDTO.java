@@ -40,7 +40,7 @@ public record EmployeeUpdateDTO(
         @Pattern(regexp = "^\\d{10,13}$", message = "Phone number must be between 10 and 13 numeric digits")
         String phoneNumber,
 
-        @Size(min = 5, max = 20, message = "Username must be between 5 and 20 characters")
+        @Size(min = 5, max = 50, message = "Username must be between 5 and 50 characters")
         String username,
 
         @Schema(description = "Password for the employee account, minimum 8 characters", example = "password123", nullable = true)
