@@ -8,6 +8,7 @@ import org.mapstruct.*;
 @Mapper(
         componentModel = "spring",
         builder = @Builder(disableBuilder = true),
+        uses = {OrderMapper.class},
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
 public interface SeatingMapper {

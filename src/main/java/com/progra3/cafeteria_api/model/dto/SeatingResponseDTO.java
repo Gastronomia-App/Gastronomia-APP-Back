@@ -31,6 +31,9 @@ public record SeatingResponseDTO(
         SeatingStatus status,
 
         @Schema(description = "Indicates if the seating is logically deleted", example = "false")
-        Boolean deleted
+        Boolean deleted,
+
+        @Schema(description = "Active order associated with the seating, if any")
+        OrderResponseDTO activeOrder
 
 ) {}

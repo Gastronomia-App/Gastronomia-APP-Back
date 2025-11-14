@@ -6,8 +6,6 @@ import com.progra3.cafeteria_api.model.enums.SeatingStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.List;
-
 
 @Entity
 @Table(name = "seating")
@@ -39,8 +37,9 @@ public class Seating {
     @Column(nullable = false)
     private SeatingSize size;
 
-    @OneToMany(mappedBy = "seating", cascade = CascadeType.ALL)
-    private List<Order> orders;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "active_order_id")
+    private Order activeOrder;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

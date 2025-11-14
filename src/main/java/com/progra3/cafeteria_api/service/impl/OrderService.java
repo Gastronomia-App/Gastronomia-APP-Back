@@ -57,8 +57,14 @@ public class OrderService implements IOrderService {
     @Override
     public OrderResponseDTO create(OrderRequestDTO dto) {
         Order order = createNewOrder(dto);
+        Order savedOrder = orderRepository.save(order);
 
-        return orderMapper.toDTO(orderRepository.save(order));
+        // Set the active order in the seating if exists
+        if (savedOrder.getSeating() != null) {
+            savedOrder.getSeating().setActiveOrder(savedOrder);
+        }
+
+        return orderMapper.toDTO(savedOrder);
     }
 
     @Override
@@ -145,7 +151,8 @@ public class OrderService implements IOrderService {
 
         order.setStatus(newStatus);
 
-        if (newStatus == OrderStatus.FINALIZED) {
+        if (newStatus == OrderStatus.FINALIZED && order.getSeating() != null) {
+            order.getSeating().setActiveOrder(null);
             eventPublisher.publishEvent(new OrderFinalizedEvent(order));
         }
 
@@ -313,7 +320,7 @@ public class OrderService implements IOrderService {
     }
 
     private void validateOrderStatus(OrderStatus orderStatus) {
-        if (orderStatus != OrderStatus.ACTIVE) {
+        if (orderStatus == OrderStatus.CANCELED || orderStatus == OrderStatus.FINALIZED) {
             throw new OrderModificationNotAllowedException(orderStatus.getName());
         }
     }
