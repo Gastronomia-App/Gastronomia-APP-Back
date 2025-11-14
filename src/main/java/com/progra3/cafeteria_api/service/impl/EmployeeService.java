@@ -4,6 +4,7 @@ import com.progra3.cafeteria_api.exception.user.*;
 import com.progra3.cafeteria_api.model.dto.EmployeeRequestDTO;
 import com.progra3.cafeteria_api.model.dto.EmployeeResponseDTO;
 import com.progra3.cafeteria_api.model.dto.EmployeeUpdateDTO;
+import com.progra3.cafeteria_api.model.entity.Business;
 import com.progra3.cafeteria_api.model.entity.Employee;
 import com.progra3.cafeteria_api.model.enums.Role;
 import com.progra3.cafeteria_api.model.mapper.EmployeeMapper;
@@ -34,16 +35,70 @@ public class EmployeeService implements IEmployeeService{
     @Override
     @Transactional
     public EmployeeResponseDTO createEmployee(EmployeeRequestDTO dto){
+        validateOwnerRole(dto.role());
 
-        if (dto.role().equals(Role.OWNER)){
-            throw new OwnerAlreadyExistsException();
+        Employee existingEmployee = checkExistingEmployeeByDni(dto.dni());
+
+        if (existingEmployee != null) {
+            return handleExistingEmployee(existingEmployee, dto);
         }
 
+        return createNewEmployee(dto);
+    }
+
+    private void validateOwnerRole(Role role) {
+        if (role.equals(Role.OWNER)) {
+            throw new OwnerAlreadyExistsException();
+        }
+    }
+
+    private Employee checkExistingEmployeeByDni(String dni) {
+        if (dni == null) {
+            return null;
+        }
+        return employeeRepository.findByDniAndBusiness_Id(dni, employeeContext.getCurrentBusinessId());
+    }
+
+    private EmployeeResponseDTO handleExistingEmployee(Employee existingEmployee, EmployeeRequestDTO dto) {
+        if (Boolean.TRUE.equals(existingEmployee.getDeleted())) {
+            return reactivateEmployee(existingEmployee, dto);
+        }
+        throw new DniAlreadyExistsException(dto.dni());
+    }
+
+    private EmployeeResponseDTO reactivateEmployee(Employee employee, EmployeeRequestDTO dto) {
+        updateEmployeeBasicInfo(employee, dto);
+        employee.setDeleted(false);
+        updateEmployeeCredentials(employee, dto.username(), dto.password());
+
+        return employeeMapper.toDTO(employeeRepository.save(employee));
+    }
+
+    private void updateEmployeeBasicInfo(Employee employee, EmployeeRequestDTO dto) {
+        employee.setName(dto.name());
+        employee.setLastName(dto.lastName());
+        employee.setEmail(dto.email());
+        employee.setPhoneNumber(dto.phoneNumber());
+        employee.setRole(dto.role());
+    }
+
+    private void updateEmployeeCredentials(Employee employee, String baseUsername, String password) {
+        String fullUsername = generateFullUsername(baseUsername, employee.getBusiness());
+        employee.setUsername(fullUsername);
+        employee.setPassword(passwordEncoder.encode(password));
+    }
+
+    private String generateFullUsername(String baseUsername, Business business) {
+        String businessSuffix = business.getName().toLowerCase().replace(" ", "_");
+        return baseUsername + "@" + businessSuffix;
+    }
+
+    private EmployeeResponseDTO createNewEmployee(EmployeeRequestDTO dto) {
         Employee employee = employeeMapper.toEntity(dto);
         employee.setBusiness(employeeContext.getCurrentBusiness());
         employee.setDeleted(false);
-        employee.setUsername(employee.getUsername() + "@" + employee.getBusiness().getName().toLowerCase().replace(" ", "_"));
-        employee.setPassword(passwordEncoder.encode(employee.getPassword()));
+
+        updateEmployeeCredentials(employee, dto.username(), dto.password());
 
         return employeeMapper.toDTO(employeeRepository.save(employee));
     }
@@ -51,7 +106,7 @@ public class EmployeeService implements IEmployeeService{
     @Override
     public Employee getEntityById (Long employeeId) {
         return Optional.ofNullable(employeeId)
-                .map(customer -> employeeRepository.findByIdAndBusiness_Id(employeeId, employeeContext.getCurrentBusinessId())
+                .map(id -> employeeRepository.findByIdAndBusiness_Id(employeeId, employeeContext.getCurrentBusinessId())
                         .orElseThrow(() -> new EmployeeNotFoundException(employeeId)))
                 .orElse(null);
     }
