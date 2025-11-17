@@ -56,14 +56,7 @@ public class OrderService implements IOrderService {
     @Transactional
     @Override
     public OrderResponseDTO create(OrderRequestDTO dto) {
-        Order order = createNewOrder(dto);
-        Order savedOrder = orderRepository.save(order);
-
-        // Set the active order in the seating if exists
-        if (savedOrder.getSeating() != null) {
-            savedOrder.getSeating().setActiveOrder(savedOrder);
-        }
-
+        Order savedOrder = createAndSaveOrder(dto);
         return orderMapper.toDTO(savedOrder);
     }
 
@@ -283,6 +276,18 @@ public class OrderService implements IOrderService {
         return order;
     }
 
+    private Order createAndSaveOrder(OrderRequestDTO dto) {
+        Order order = createNewOrder(dto);
+        Order savedOrder = orderRepository.save(order);
+
+        // Set the active order in the seating if exists
+        if (savedOrder.getSeating() != null) {
+            savedOrder.getSeating().setActiveOrder(savedOrder);
+        }
+
+        return savedOrder;
+    }
+
     private Order getOrCreateDestinationOrder(OrderRequestDTO destinationDto) {
         return orderRepository.findBySeating_IdAndStatusAndBusiness_Id(
                         Optional.ofNullable(destinationDto.seatingId())
@@ -290,7 +295,7 @@ public class OrderService implements IOrderService {
                         OrderStatus.ACTIVE,
                         employeeContext.getCurrentBusinessId())
                 .orElseGet(() -> {
-                    Order newOrder = createNewOrder(destinationDto);
+                    Order newOrder = createAndSaveOrder(destinationDto);
                     newOrder.setPeopleCount(0);
                     return newOrder;
                 });

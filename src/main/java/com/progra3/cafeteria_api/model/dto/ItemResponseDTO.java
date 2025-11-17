@@ -14,8 +14,8 @@ public record ItemResponseDTO(
         @Schema(description = "Identifier of the associated order", example = "1005")
         Long orderId,
 
-        @Schema(description = "Identifier of the associated product", example = "301")
-        Long productId,
+        @Schema(description = "Product associated with this item")
+        ProductResponseDTO product,
 
         @Schema(description = "List of selected options for the product")
         List<SelectedProductOptionResponseDTO> selectedOptions,
