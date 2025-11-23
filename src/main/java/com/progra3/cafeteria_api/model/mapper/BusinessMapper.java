@@ -10,6 +10,9 @@ import org.mapstruct.*;
         uses = {AddressMapper.class, EmployeeMapper.class},
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface BusinessMapper {
+    @Mapping(target = "employeesCount", ignore = true)
+    @Mapping(target = "activeEmployeesCount", ignore = true)
+    @Mapping(target = "inactiveEmployeesCount", ignore = true)
     BusinessResponseDTO toDTO(Business business);
 
     Business toEntity(BusinessRequestDTO dto);

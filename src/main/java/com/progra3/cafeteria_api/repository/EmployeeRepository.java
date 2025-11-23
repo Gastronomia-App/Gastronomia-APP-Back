@@ -41,4 +41,8 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long>, JpaSp
 
     boolean existsByRoleAndBusiness_Id(Role role, Long businessId);
     boolean existsByDniAndBusiness_Id(String dni, Long businessId);
+    long countByBusiness_IdAndRoleNot(Long businessId, Role role);
+    long countByBusiness_IdAndDeletedFalseAndRoleNot(Long businessId, Role role);
+
+    long countByBusiness_IdAndDeletedTrueAndRoleNot(Long businessId, Role role);
 }
