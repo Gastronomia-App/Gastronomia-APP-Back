@@ -17,9 +17,9 @@ import java.util.Optional;
 public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findByIdAndBusiness_Id(Long orderId, Long businessId);
 
-    @Query("SELECT o FROM Order o WHERE " +
+    @Query("SELECT o FROM Order o LEFT JOIN o.customer c WHERE " +
             "o.business.id = :businessId AND " +
-            "(:customerName IS NULL OR (o.customer IS NOT NULL AND LOWER(CONCAT(o.customer.name, ' ', o.customer.lastName)) LIKE LOWER(CONCAT('%', :customerName, '%')))) AND " +
+            "(:customerName IS NULL OR LOWER(CONCAT(COALESCE(c.name, ''), ' ', COALESCE(c.lastName, ''))) LIKE LOWER(CONCAT('%', :customerName, '%'))) AND " +
             "(:employeeName IS NULL OR LOWER(CONCAT(o.employee.name, ' ', o.employee.lastName)) LIKE LOWER(CONCAT('%', :employeeName, '%'))) AND " +
             "(:startDate IS NULL OR o.dateTime >= :startDate) AND " +
             "(:endDate IS NULL OR o.dateTime <= :endDate) AND " +
