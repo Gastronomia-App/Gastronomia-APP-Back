@@ -1,5 +1,7 @@
 package com.progra3.cafeteria_api.service.impl;
 
+import com.progra3.cafeteria_api.event.SeatingAllOccupiedEvent;
+import com.progra3.cafeteria_api.event.SeatingAvailableEvent;
 import com.progra3.cafeteria_api.exception.seating.SeatingAlreadyExistsException;
 import com.progra3.cafeteria_api.exception.seating.SeatingModificationNotAllowed;
 import com.progra3.cafeteria_api.exception.seating.SeatingNotFoundException;
@@ -14,12 +16,11 @@ import com.progra3.cafeteria_api.repository.SeatingRepository;
 import com.progra3.cafeteria_api.security.EmployeeContext;
 import com.progra3.cafeteria_api.service.port.ISeatingService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.awt.*;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +29,7 @@ public class SeatingService implements ISeatingService {
     private final SeatingRepository seatingRepository;
     private final EmployeeContext employeeContext;
     private final SeatingMapper seatingMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
 
     @Override
@@ -115,6 +117,7 @@ public class SeatingService implements ISeatingService {
     public void updateStatus(Seating seating, OrderStatus status) {
         validateSeating(seating);
 
+        SeatingStatus oldStatus = seating.getStatus();
         SeatingStatus newStatus = switch (status) {
             case BILLED -> SeatingStatus.BILLING;
             case FINALIZED, CANCELED -> SeatingStatus.FREE;
@@ -123,6 +126,8 @@ public class SeatingService implements ISeatingService {
 
         seating.setStatus(newStatus);
         seatingRepository.save(seating);
+
+        checkSeatingAvailability(oldStatus, newStatus, seating);
     }
 
     @Override
@@ -176,5 +181,44 @@ public class SeatingService implements ISeatingService {
 
         seatingRepository.save(seating);
         return seatingMapper.toDTO(seating);
+    }
+
+
+    // Notification methods
+    public void checkAndNotifySeatingOccupancy() {
+        Long businessId = employeeContext.getCurrentBusinessId();
+        List<Seating> allSeatings = seatingRepository.findActiveByBusiness_Id(businessId);
+
+        long freeCount = allSeatings.stream()
+                .filter(s -> s.getStatus() == SeatingStatus.FREE)
+                .count();
+
+        boolean allOccupied = (freeCount == 0);
+
+        if (allOccupied) {
+            eventPublisher.publishEvent(new SeatingAllOccupiedEvent(businessId));
+        }
+    }
+
+    private void checkSeatingAvailability(SeatingStatus oldStatus, SeatingStatus newStatus, Seating seating) {
+        Long businessId = employeeContext.getCurrentBusinessId();
+
+        if (oldStatus != SeatingStatus.FREE && newStatus == SeatingStatus.FREE) {
+            eventPublisher.publishEvent(new SeatingAvailableEvent(seating, businessId));
+        }
+
+        if (oldStatus == SeatingStatus.FREE && newStatus != SeatingStatus.FREE) {
+            List<Seating> allSeatings = seatingRepository.findActiveByBusiness_Id(businessId);
+
+            long freeCount = allSeatings.stream()
+                    .filter(s -> s.getStatus() == SeatingStatus.FREE)
+                    .count();
+
+            boolean allOccupied = (freeCount == 0);
+
+            if (allOccupied) {
+                eventPublisher.publishEvent(new SeatingAllOccupiedEvent(businessId));
+            }
+        }
     }
 }

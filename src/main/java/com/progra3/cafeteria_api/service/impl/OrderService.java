@@ -280,9 +280,12 @@ public class OrderService implements IOrderService {
         Order order = createNewOrder(dto);
         Order savedOrder = orderRepository.save(order);
 
-        // Set the active order in the seating if exists
+        // Set the active order in the seating if exists and trigger notification
         if (savedOrder.getSeating() != null) {
-            savedOrder.getSeating().setActiveOrder(savedOrder);
+            Seating seating = savedOrder.getSeating();
+            seating.setActiveOrder(savedOrder);
+
+            seatingService.checkAndNotifySeatingOccupancy();
         }
 
         return savedOrder;

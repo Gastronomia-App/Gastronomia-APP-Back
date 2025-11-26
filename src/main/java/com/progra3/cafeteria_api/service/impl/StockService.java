@@ -1,10 +1,13 @@
 package com.progra3.cafeteria_api.service.impl;
 
+import com.progra3.cafeteria_api.event.StockLowEvent;
+import com.progra3.cafeteria_api.event.StockOutEvent;
 import com.progra3.cafeteria_api.exception.product.NotEnoughStockException;
 import com.progra3.cafeteria_api.model.entity.*;
 import com.progra3.cafeteria_api.service.port.IStockService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,6 +16,9 @@ public class StockService implements IStockService {
 
     private final ProductService productService;
     private final ProductOptionService productOptionService;
+    private final ApplicationEventPublisher eventPublisher;
+
+    private static final int LOW_STOCK_THRESHOLD = 10;
 
     @Transactional
     @Override
@@ -105,8 +111,25 @@ public class StockService implements IStockService {
     private void decreaseStock(Product product, int quantity) {
         if (product.isControlStock()) {
             verifyStock(product, quantity);
-            product.setStock(product.getStock() - quantity);
+            int previousStock = product.getStock();
+            int newStock = previousStock - quantity;
+            product.setStock(newStock);
             productService.updateProduct(product);
+
+            checkStockLevels(product, previousStock, newStock);
+        }
+    }
+
+    // Notification methods
+
+    private void checkStockLevels(Product product, int previousStock, int newStock) {
+        Long businessId = product.getBusiness().getId();
+
+        if (newStock == 0 && previousStock > 0) {
+            eventPublisher.publishEvent(new StockOutEvent(product, businessId));
+        }
+        else if (newStock > 0 && newStock <= LOW_STOCK_THRESHOLD && previousStock > LOW_STOCK_THRESHOLD) {
+            eventPublisher.publishEvent(new StockLowEvent(product, businessId));
         }
     }
 }

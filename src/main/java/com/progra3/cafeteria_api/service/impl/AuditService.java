@@ -1,5 +1,7 @@
 package com.progra3.cafeteria_api.service.impl;
 
+import com.progra3.cafeteria_api.event.AuditCreatedEvent;
+import com.progra3.cafeteria_api.event.AuditFinalizedEvent;
 import com.progra3.cafeteria_api.exception.audit.AuditInProgressException;
 import com.progra3.cafeteria_api.exception.audit.AuditModificationNotAllowedException;
 import com.progra3.cafeteria_api.exception.audit.AuditNotFoundException;
@@ -17,6 +19,7 @@ import com.progra3.cafeteria_api.security.EmployeeContext;
 import com.progra3.cafeteria_api.service.port.IAuditService;
 import com.progra3.cafeteria_api.service.helper.Constant;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -43,6 +46,8 @@ public class AuditService implements IAuditService {
 
     private final Clock clock;
 
+    private final ApplicationEventPublisher eventPublisher;
+
     @Override
     public AuditResponseDTO create(AuditRequestDTO dto) {
 
@@ -66,7 +71,11 @@ public class AuditService implements IAuditService {
 
         validateNewAudit(audit);
 
-        return auditMapper.toDTO(auditRepository.save(audit));
+        Audit savedAudit = auditRepository.save(audit);
+
+        eventPublisher.publishEvent(new AuditCreatedEvent(savedAudit));
+
+        return auditMapper.toDTO(savedAudit);
     }
 
     @Override
@@ -109,7 +118,11 @@ public class AuditService implements IAuditService {
 
         recalculateAudit(audit);
 
-        return auditMapper.toDTO(auditRepository.save(audit));
+        Audit savedAudit = auditRepository.save(audit);
+
+        eventPublisher.publishEvent(new AuditFinalizedEvent(savedAudit));
+
+        return auditMapper.toDTO(savedAudit);
     }
 
     @Override
