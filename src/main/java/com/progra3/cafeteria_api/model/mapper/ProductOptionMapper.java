@@ -8,11 +8,11 @@ import org.mapstruct.*;
 @Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true), nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface ProductOptionMapper {
 
-    @Mapping(source = "product.id", target = "productId")
+    @Mapping(target = "productId", source = "product.id")
+    @Mapping(target = "productName", source = "product.name")
     ProductOptionResponseDTO toDTO(ProductOption productOption);
 
     ProductOption toEntity(ProductOptionRequestDTO dto);
 
     ProductOption updateProductOptionFromDTO(@MappingTarget ProductOption productOption, ProductOptionRequestDTO dto);
-
 }

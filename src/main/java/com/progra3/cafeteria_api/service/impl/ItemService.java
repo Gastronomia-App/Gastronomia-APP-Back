@@ -1,19 +1,24 @@
 package com.progra3.cafeteria_api.service.impl;
 
 import com.progra3.cafeteria_api.exception.order.ItemNotFoundException;
+import com.progra3.cafeteria_api.exception.product.ProductOptionNotFoundException;
 import com.progra3.cafeteria_api.model.dto.ItemRequestDTO;
 import com.progra3.cafeteria_api.model.dto.ItemTransferRequestDTO;
+import com.progra3.cafeteria_api.model.dto.SelectedProductOptionRequestDTO;
 import com.progra3.cafeteria_api.model.mapper.ItemMapper;
 import com.progra3.cafeteria_api.model.entity.Item;
 import com.progra3.cafeteria_api.model.entity.Order;
 import com.progra3.cafeteria_api.model.entity.Product;
+import com.progra3.cafeteria_api.model.entity.SelectedProductOption;
 import com.progra3.cafeteria_api.repository.ItemRepository;
+import com.progra3.cafeteria_api.repository.ProductOptionRepository;
 import com.progra3.cafeteria_api.service.port.IItemService;
 import com.progra3.cafeteria_api.service.helper.ProductFinderService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -23,6 +28,7 @@ public class ItemService implements IItemService {
     private final ItemMapper itemMapper;
     private final ProductFinderService productFinderService;
     private final StockService stockService;
+    private final ProductOptionRepository productOptionRepository;
 
     @Transactional
     @Override
@@ -33,6 +39,12 @@ public class ItemService implements IItemService {
         item.setProduct(product);
         item.setUnitPrice(product.getPrice());
         item.setDeleted(false);
+
+        // Manejar selectedOptions
+        if (itemDTO.selectedOptions() != null && !itemDTO.selectedOptions().isEmpty()) {
+            item.setSelectedOptions(convertSelectedOptions(itemDTO.selectedOptions()));
+        }
+
         calculateTotalPrice(item);
 
         stockService.decreaseStockForItem(item);
@@ -43,8 +55,31 @@ public class ItemService implements IItemService {
     @Override
     public Item updateItem(Item itemToUpdate, ItemRequestDTO itemDTO) {
         itemToUpdate = itemMapper.updateItemFromDTO(itemDTO, itemToUpdate);
+
+        // Actualizar selectedOptions
+        if (itemDTO.selectedOptions() != null) {
+            itemToUpdate.getSelectedOptions().clear();
+            if (!itemDTO.selectedOptions().isEmpty()) {
+                itemToUpdate.setSelectedOptions(convertSelectedOptions(itemDTO.selectedOptions()));
+            }
+        }
+
         calculateTotalPrice(itemToUpdate);
         return itemToUpdate;
+    }
+
+    private List<SelectedProductOption> convertSelectedOptions(List<SelectedProductOptionRequestDTO> dtos) {
+        if (dtos == null || dtos.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return dtos.stream()
+                .map(dto -> SelectedProductOption.builder()
+                        .productOption(productOptionRepository.findById(dto.productOptionId())
+                                .orElseThrow(() -> new ProductOptionNotFoundException(dto.productOptionId())))
+                        .quantity(dto.quantity())
+                        .build())
+                .toList();
     }
 
     @Override

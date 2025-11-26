@@ -13,6 +13,11 @@ import java.util.Optional;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
+    @EntityGraph(attributePaths = {
+            "components",
+            "components.product",
+            "productGroups"
+    })
     @Query("SELECT p FROM Product p WHERE " +
             "p.business.id = :businessId AND " +
             "(:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
@@ -30,7 +35,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @EntityGraph(attributePaths = {
             "components",
-            "components.product"
+            "components.product",
+            "productGroups"
     })
     @Query("SELECT p FROM Product p WHERE p.id = :id AND p.business.id = :businessId")
     Optional<Product> findByIdAndBusiness_IdWithComponents(@Param("id") Long id,

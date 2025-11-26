@@ -4,10 +4,10 @@ import com.progra3.cafeteria_api.model.enums.OrderStatus;
 import com.progra3.cafeteria_api.model.enums.OrderType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Entity
 @Table(name = "orders")
@@ -38,6 +38,7 @@ public class Order {
     private Seating seating;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    @BatchSize(size = 50)
     private List<Item> items = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
@@ -66,4 +67,17 @@ public class Order {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "business_id", nullable = false)
     private Business business;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Order order = (Order) o;
+        return Objects.equals(id, order.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }

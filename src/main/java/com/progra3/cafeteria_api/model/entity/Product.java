@@ -3,6 +3,7 @@ package com.progra3.cafeteria_api.model.entity;
 import com.progra3.cafeteria_api.model.enums.CompositionType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -45,6 +46,7 @@ public class Product {
     private Integer stock;
 
     @OneToMany(mappedBy = "parentProduct", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 50)
     private Set<ProductComponent> components = new HashSet<>();
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -59,6 +61,7 @@ public class Product {
             joinColumns = @JoinColumn(name = "product_id"),
             inverseJoinColumns = @JoinColumn(name = "product_group_id")
     )
+    @BatchSize(size = 50)
     private Set<ProductGroup> productGroups = new HashSet<>();
 
     @Column(nullable = false)

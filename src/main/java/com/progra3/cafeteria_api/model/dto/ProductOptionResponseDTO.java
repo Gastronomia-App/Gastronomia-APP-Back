@@ -7,8 +7,11 @@ public record ProductOptionResponseDTO(
         @Schema(description = "Unique identifier of the product option", example = "1")
         Long id,
 
-        @Schema(description = "ID of the associated product", example = "10")
+        @Schema(description = "ID of the associated product", example = "102")
         Long productId,
+
+        @Schema(description = "Name of the associated product", example = "Tamaño Grande")
+        String productName,
 
         @Schema(description = "Maximum quantity allowed for this product option", example = "5")
         Integer maxQuantity,

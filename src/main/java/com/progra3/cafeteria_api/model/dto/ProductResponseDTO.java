@@ -1,5 +1,6 @@
 package com.progra3.cafeteria_api.model.dto;
 
+import com.progra3.cafeteria_api.model.enums.CompositionType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
@@ -35,8 +36,8 @@ public record ProductResponseDTO(
         @Schema(description = "Indicates if the product is active", example = "true")
         Boolean active,
 
-        @Schema(description = "Indicates if the product is a composite product (made of components)", example = "false")
-        Boolean composite,
+        @Schema(description = "Type of composition of the product")
+        CompositionType compositionType,
 
         @Schema(description = "List of components if this is a composite product")
         List<ProductComponentResponseDTO> components,
