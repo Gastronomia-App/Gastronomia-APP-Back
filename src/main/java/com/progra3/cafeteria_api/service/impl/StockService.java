@@ -32,7 +32,7 @@ public class StockService implements IStockService {
 
         switch (product.getCompositionType()) {
             case NONE -> handleNoneComposition(product, quantity);
-            case SELECTABLE -> handleSelectableComposition(item, quantity);
+            case SELECTABLE -> handleSelectableComposition(item);
             case FIXED -> handleFixedComposition(product, quantity);
             case FIXED_SELECTABLE -> handleFixedSelectableComposition(item, quantity);
         }
@@ -60,11 +60,11 @@ public class StockService implements IStockService {
         decreaseStock(product, quantity);
     }
 
-    private void handleSelectableComposition(Item item, int quantity) {
+    private void handleSelectableComposition(Item item) {
         for (SelectedProductOption selectedOption : item.getSelectedOptions()) {
             ProductOption option = productOptionService.getEntityById(
                     selectedOption.getProductOption().getId());
-            decreaseStock(option.getProduct(), selectedOption.getQuantity() * quantity);
+            decreaseStock(option.getProduct(), selectedOption.getQuantity());
         }
     }
 
@@ -76,7 +76,7 @@ public class StockService implements IStockService {
 
     private void handleFixedSelectableComposition(Item item, int quantity) {
         handleFixedComposition(item.getProduct(), quantity);
-        handleSelectableComposition(item, quantity);
+        handleSelectableComposition(item);
     }
 
     private void verifyNone(Product product, int quantity) {

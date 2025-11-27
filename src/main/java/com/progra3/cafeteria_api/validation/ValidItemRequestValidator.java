@@ -37,10 +37,6 @@ public class ValidItemRequestValidator implements ConstraintValidator<ValidItemR
     }
 
     private boolean validateSelectable(ItemRequestDTO dto, Product product, ConstraintValidatorContext context) {
-        if (dto.quantity() != 1) {
-            return error(context, "Composite products with selectable options must be added one at a time.", "quantity");
-        }
-
         return validateOptionGroups(dto, product, context);
     }
 
@@ -60,6 +56,7 @@ public class ValidItemRequestValidator implements ConstraintValidator<ValidItemR
 
     private boolean validateOptionGroups(ItemRequestDTO dto, Product product, ConstraintValidatorContext context) {
         Set<ProductGroup> groups = product.getProductGroups();
+        int itemQuantity = dto.quantity();
 
         boolean allGroupsOptional = groups.stream()
                 .allMatch(group -> group.getMinQuantity() == 0);
@@ -82,7 +79,6 @@ public class ValidItemRequestValidator implements ConstraintValidator<ValidItemR
         Map<Long, Integer> selectedCountPerOption = new HashMap<>();
 
         for (SelectedProductOptionRequestDTO option : dto.selectedOptions()) {
-
             Long productOptionId = option.productOptionId();
             Integer quantity = option.quantity();
 
@@ -94,18 +90,26 @@ public class ValidItemRequestValidator implements ConstraintValidator<ValidItemR
             selectedCountPerGroup.merge(groupId, quantity, Integer::sum);
             selectedCountPerOption.merge(productOptionId, quantity, Integer::sum);
         }
+
         for (ProductGroup group : groups) {
             int count = selectedCountPerGroup.getOrDefault(group.getId(), 0);
-            if (count < group.getMinQuantity() || count > group.getMaxQuantity()) {
-                return error(context, "Group '" + group.getName() + "' requires between " + group.getMinQuantity() +
-                        " and " + group.getMaxQuantity() + " selections.", "selectedOptions");
+
+            int requiredMin = group.getMinQuantity() * itemQuantity;
+            int allowedMax = group.getMaxQuantity() * itemQuantity;
+
+            if (count < requiredMin || count > allowedMax) {
+                return error(context, "Group '" + group.getName() + "' requires between " + requiredMin +
+                        " and " + allowedMax + " selections.", "selectedOptions");
             }
 
             for (ProductOption option : group.getOptions()) {
                 int countPerOption = selectedCountPerOption.getOrDefault(option.getId(), 0);
-                if (countPerOption > option.getMaxQuantity()) {
+
+                int optionMax = option.getMaxQuantity() * itemQuantity;
+
+                if (countPerOption > optionMax) {
                     return error(context, "Option '" + option.getProduct().getName() +
-                            "' in group '" + group.getName() + "' can be selected at most " + option.getMaxQuantity() + " times.", "selectedOptions");
+                            "' in group '" + group.getName() + "' can be selected at most " + optionMax + " times.", "selectedOptions");
                 }
             }
         }
