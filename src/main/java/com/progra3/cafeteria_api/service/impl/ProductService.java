@@ -1,5 +1,6 @@
 package com.progra3.cafeteria_api.service.impl;
 
+import com.progra3.cafeteria_api.exception.product.ProductNameAlreadyExistsException;
 import com.progra3.cafeteria_api.exception.product.ProductNotFoundException;
 import com.progra3.cafeteria_api.model.dto.ProductComponentRequestDTO;
 import com.progra3.cafeteria_api.model.dto.ProductRequestDTO;
@@ -73,6 +74,15 @@ public class ProductService implements IProductService {
     @Override
     public ProductResponseDTO updateProduct(Long id, ProductRequestDTO productRequestDTO) {
         Product product = getEntityById(id);
+        Long businessId = employeeContext.getCurrentBusinessId();
+
+        // Validate name uniqueness if changed
+        if (!productRequestDTO.name().equals(product.getName())) {
+            if (productRepository.existsByNameAndBusiness_Id(productRequestDTO.name(), businessId)) {
+                throw new ProductNameAlreadyExistsException(productRequestDTO.name());
+            }
+        }
+
         Category category = categoryService.getEntityById(productRequestDTO.categoryId());
 
         productMapper.updateProductFromDTO(product, productRequestDTO);

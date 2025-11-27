@@ -12,4 +12,6 @@ public interface ProductGroupRepository extends JpaRepository<ProductGroup, Long
     Optional<ProductGroup> findByIdAndBusiness_Id(Long id, Long businessId);
 
     List<ProductGroup> findByBusiness_Id(Long businessId);
+
+    boolean existsByNameAndBusiness_Id(String name, Long businessId);
 }

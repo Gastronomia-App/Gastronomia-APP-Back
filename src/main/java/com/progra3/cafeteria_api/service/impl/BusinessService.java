@@ -1,5 +1,7 @@
 package com.progra3.cafeteria_api.service.impl;
 
+import com.progra3.cafeteria_api.exception.business.BusinessCuitAlreadyExistsException;
+import com.progra3.cafeteria_api.exception.business.BusinessNameAlreadyExistsException;
 import com.progra3.cafeteria_api.exception.business.BusinessNotFoundException;
 import com.progra3.cafeteria_api.model.dto.BusinessRequestDTO;
 import com.progra3.cafeteria_api.model.dto.BusinessResponseDTO;
@@ -99,6 +101,20 @@ public class BusinessService implements IBusinessService {
         Long currentBusinessId = employeeContext.getCurrentBusinessId();
         if (!business.getId().equals(currentBusinessId)) {
             throw new AccessDeniedException("No tienes permiso para modificar este negocio");
+        }
+
+        // Validate name uniqueness if changed
+        if (dto.name() != null && !dto.name().equals(business.getName())) {
+            if (businessRepository.existsByName(dto.name())) {
+                throw new BusinessNameAlreadyExistsException(dto.name());
+            }
+        }
+
+        // Validate CUIT uniqueness if changed
+        if (dto.cuit() != null && !dto.cuit().equals(business.getCuit())) {
+            if (businessRepository.existsByCuit(dto.cuit())) {
+                throw new BusinessCuitAlreadyExistsException(dto.cuit());
+            }
         }
 
         businessMapper.updateBusinessFromDTO(dto, business);

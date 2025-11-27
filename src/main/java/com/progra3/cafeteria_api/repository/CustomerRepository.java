@@ -25,9 +25,11 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
                                      @Param("lastName") String lastName,
                                      @Param("dni") String dni,
                                      @Param("email") String email,
-                                     Long businessId,
+                                     @Param("businessId") Long businessId,
                                      Pageable pageable);
 
     Optional<Customer> findByIdAndBusiness_Id(Long id, Long businessId);
     Customer findByDniAndBusiness_Id(String dni, Long businessId);
+    boolean existsByEmailAndBusiness_Id(String email, Long businessId);
+    boolean existsByPhoneNumberAndBusiness_Id(String phoneNumber, Long businessId);
 }

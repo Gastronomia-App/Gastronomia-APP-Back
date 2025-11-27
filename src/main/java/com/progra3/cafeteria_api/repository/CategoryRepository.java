@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface CategoryRepository extends JpaRepository<Category, Long> {
     Page<Category> findByBusiness_Id(Long businessId, Pageable pageable);
     Optional<Category> findByIdAndBusiness_Id(Long id, Long businessId);
+    boolean existsByNameAndBusiness_Id(String name, Long businessId);
 }

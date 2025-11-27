@@ -9,4 +9,6 @@ import java.util.Optional;
 @Repository
 public interface BusinessRepository extends JpaRepository<Business, Long> {
     Optional<Business> findByIdAndDeletedFalse(Long id);
+    boolean existsByName(String name);
+    boolean existsByCuit(String cuit);
 }

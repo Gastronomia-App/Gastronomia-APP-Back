@@ -53,8 +53,16 @@ public class CategoryService implements ICategoryService {
 
     @Override
     public CategoryResponseDTO updateCategory(Long id, CategoryRequestDTO categoryRequestDTO) {
-        Category categoryToUpdate = categoryRepository.findByIdAndBusiness_Id(id, employeeContext.getCurrentBusinessId())
+        Long businessId = employeeContext.getCurrentBusinessId();
+        Category categoryToUpdate = categoryRepository.findByIdAndBusiness_Id(id, businessId)
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID " + id + " for the current business."));
+
+        // Validate name uniqueness if changed
+        if (!categoryRequestDTO.name().equals(categoryToUpdate.getName())) {
+            if (categoryRepository.existsByNameAndBusiness_Id(categoryRequestDTO.name(), businessId)) {
+                throw new com.progra3.cafeteria_api.exception.product.CategoryNameAlreadyExistsException(categoryRequestDTO.name());
+            }
+        }
 
         categoryToUpdate.setName(categoryRequestDTO.name());
         categoryToUpdate.setColor(categoryRequestDTO.color());

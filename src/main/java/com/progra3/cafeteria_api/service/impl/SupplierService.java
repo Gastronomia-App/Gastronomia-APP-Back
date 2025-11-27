@@ -66,8 +66,37 @@ public class SupplierService implements ISupplierService {
 
     @Override
     public SupplierResponseDTO update(Long supplierId, SupplierUpdateDTO dto) {
-
+        Long businessId = employeeContext.getCurrentBusinessId();
         Supplier supplier = getEntityById(supplierId);
+
+        // Validate CUIT uniqueness if changed
+        if (dto.cuit() != null && !dto.cuit().equals(supplier.getCuit())) {
+            if (supplierRepository.existsByCuitAndBusiness_Id(dto.cuit(), businessId)) {
+                throw new com.progra3.cafeteria_api.exception.supplier.SupplierCuitAlreadyExistsException(dto.cuit());
+            }
+        }
+
+        // Validate legal name uniqueness if changed
+        if (dto.legalName() != null && !dto.legalName().equals(supplier.getLegalName())) {
+            if (supplierRepository.existsByLegalNameAndBusiness_Id(dto.legalName(), businessId)) {
+                throw new com.progra3.cafeteria_api.exception.supplier.SupplierLegalNameAlreadyExistsException(dto.legalName());
+            }
+        }
+
+        // Validate email uniqueness if changed
+        if (dto.email() != null && !dto.email().equals(supplier.getEmail())) {
+            if (supplierRepository.existsByEmailAndBusiness_Id(dto.email(), businessId)) {
+                throw new com.progra3.cafeteria_api.exception.supplier.SupplierEmailAlreadyExistsException(dto.email());
+            }
+        }
+
+        // Validate phone number uniqueness if changed
+        if (dto.phoneNumber() != null && !dto.phoneNumber().equals(supplier.getPhoneNumber())) {
+            if (supplierRepository.existsByPhoneNumberAndBusiness_Id(dto.phoneNumber(), businessId)) {
+                throw new com.progra3.cafeteria_api.exception.supplier.SupplierPhoneNumberAlreadyExistsException(dto.phoneNumber());
+            }
+        }
+
         supplier = supplierMapper.updateSupplierFromDTO(dto, supplier);
 
         return supplierMapper.toDTO(supplierRepository.save(supplier));

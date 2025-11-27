@@ -13,6 +13,8 @@ import java.util.Optional;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
+    boolean existsByNameAndBusiness_Id(String name, Long businessId);
+
     @EntityGraph(attributePaths = {
             "components",
             "components.product",
