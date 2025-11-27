@@ -2,13 +2,23 @@ package com.progra3.cafeteria_api.exception.handler;
 
 import com.progra3.cafeteria_api.exception.audit.AuditInProgressException;
 import com.progra3.cafeteria_api.exception.audit.AuditNotFoundException;
+import com.progra3.cafeteria_api.exception.business.BusinessCuitAlreadyExistsException;
+import com.progra3.cafeteria_api.exception.business.BusinessNameAlreadyExistsException;
+import com.progra3.cafeteria_api.exception.business.BusinessNotFoundException;
 import com.progra3.cafeteria_api.exception.customer.CustomerAlreadyActiveException;
+import com.progra3.cafeteria_api.exception.customer.CustomerDniAlreadyExistsException;
+import com.progra3.cafeteria_api.exception.customer.CustomerEmailAlreadyExistsException;
 import com.progra3.cafeteria_api.exception.customer.CustomerNotFoundException;
+import com.progra3.cafeteria_api.exception.customer.CustomerPhoneNumberAlreadyExistsException;
 import com.progra3.cafeteria_api.exception.expense.ExpenseNotFoundException;
 import com.progra3.cafeteria_api.exception.order.ItemNotFoundException;
 import com.progra3.cafeteria_api.exception.order.OrderModificationNotAllowedException;
 import com.progra3.cafeteria_api.exception.order.OrderNotFoundException;
 import com.progra3.cafeteria_api.exception.product.*;
+import com.progra3.cafeteria_api.exception.supplier.SupplierCuitAlreadyExistsException;
+import com.progra3.cafeteria_api.exception.supplier.SupplierEmailAlreadyExistsException;
+import com.progra3.cafeteria_api.exception.supplier.SupplierLegalNameAlreadyExistsException;
+import com.progra3.cafeteria_api.exception.supplier.SupplierPhoneNumberAlreadyExistsException;
 import com.progra3.cafeteria_api.exception.seating.SeatingAlreadyExistsException;
 import com.progra3.cafeteria_api.exception.seating.SeatingModificationNotAllowed;
 import com.progra3.cafeteria_api.exception.seating.SeatingNotFoundException;
@@ -366,6 +376,138 @@ public class GlobalHandler extends ResponseEntityExceptionHandler {
                 ResponseMessage.builder()
                         .message(ex.getMessage())
                         .status(HttpStatus.NOT_FOUND.value())
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(BusinessNameAlreadyExistsException.class)
+    public ResponseEntity<ResponseMessage> handleBusinessNameAlreadyExistsException(BusinessNameAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ResponseMessage.builder()
+                        .message(ex.getMessage())
+                        .status(HttpStatus.CONFLICT.value())
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(BusinessCuitAlreadyExistsException.class)
+    public ResponseEntity<ResponseMessage> handleBusinessCuitAlreadyExistsException(BusinessCuitAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ResponseMessage.builder()
+                        .message(ex.getMessage())
+                        .status(HttpStatus.CONFLICT.value())
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(BusinessNotFoundException.class)
+    public ResponseEntity<ResponseMessage> handleBusinessNotFoundException(BusinessNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                ResponseMessage.builder()
+                        .message(ex.getMessage())
+                        .status(HttpStatus.NOT_FOUND.value())
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(CategoryNameAlreadyExistsException.class)
+    public ResponseEntity<ResponseMessage> handleCategoryNameAlreadyExistsException(CategoryNameAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ResponseMessage.builder()
+                        .message(ex.getMessage())
+                        .status(HttpStatus.CONFLICT.value())
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(ProductNameAlreadyExistsException.class)
+    public ResponseEntity<ResponseMessage> handleProductNameAlreadyExistsException(ProductNameAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ResponseMessage.builder()
+                        .message(ex.getMessage())
+                        .status(HttpStatus.CONFLICT.value())
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(SupplierCuitAlreadyExistsException.class)
+    public ResponseEntity<ResponseMessage> handleSupplierCuitAlreadyExistsException(SupplierCuitAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ResponseMessage.builder()
+                        .message(ex.getMessage())
+                        .status(HttpStatus.CONFLICT.value())
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(SupplierLegalNameAlreadyExistsException.class)
+    public ResponseEntity<ResponseMessage> handleSupplierLegalNameAlreadyExistsException(SupplierLegalNameAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ResponseMessage.builder()
+                        .message(ex.getMessage())
+                        .status(HttpStatus.CONFLICT.value())
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(SupplierEmailAlreadyExistsException.class)
+    public ResponseEntity<ResponseMessage> handleSupplierEmailAlreadyExistsException(SupplierEmailAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ResponseMessage.builder()
+                        .message(ex.getMessage())
+                        .status(HttpStatus.CONFLICT.value())
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(SupplierPhoneNumberAlreadyExistsException.class)
+    public ResponseEntity<ResponseMessage> handleSupplierPhoneNumberAlreadyExistsException(SupplierPhoneNumberAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ResponseMessage.builder()
+                        .message(ex.getMessage())
+                        .status(HttpStatus.CONFLICT.value())
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(CustomerDniAlreadyExistsException.class)
+    public ResponseEntity<ResponseMessage> handleCustomerDniAlreadyExistsException(CustomerDniAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ResponseMessage.builder()
+                        .message(ex.getMessage())
+                        .status(HttpStatus.CONFLICT.value())
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(CustomerEmailAlreadyExistsException.class)
+    public ResponseEntity<ResponseMessage> handleCustomerEmailAlreadyExistsException(CustomerEmailAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ResponseMessage.builder()
+                        .message(ex.getMessage())
+                        .status(HttpStatus.CONFLICT.value())
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(CustomerPhoneNumberAlreadyExistsException.class)
+    public ResponseEntity<ResponseMessage> handleCustomerPhoneNumberAlreadyExistsException(CustomerPhoneNumberAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ResponseMessage.builder()
+                        .message(ex.getMessage())
+                        .status(HttpStatus.CONFLICT.value())
                         .timestamp(LocalDateTime.now())
                         .build()
         );
