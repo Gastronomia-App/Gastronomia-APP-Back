@@ -36,6 +36,7 @@ import com.progra3.cafeteria_api.exception.supplier.SupplierNotFoundException;
 import com.progra3.cafeteria_api.exception.supplier.SupplierPhoneNumberAlreadyExistsException;
 import com.progra3.cafeteria_api.exception.user.*;
 import com.progra3.cafeteria_api.exception.utilities.InvalidDateException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -691,5 +692,19 @@ public class GlobalHandler extends ResponseEntityExceptionHandler {
                         .code("INTERNAL_ERROR")
                         .timestamp(LocalDateTime.now())
                         .build());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ResponseMessage> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        // You can log the exception here if needed
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ResponseMessage.builder()
+                        .message("Database constraint violation")
+                        .status(HttpStatus.CONFLICT.value())
+                        .code("DATABASE_CONSTRAINT_VIOLATION")
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
     }
 }
