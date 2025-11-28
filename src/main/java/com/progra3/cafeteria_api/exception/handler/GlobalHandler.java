@@ -14,6 +14,9 @@ import com.progra3.cafeteria_api.exception.expense.ExpenseNotFoundException;
 import com.progra3.cafeteria_api.exception.order.ItemNotFoundException;
 import com.progra3.cafeteria_api.exception.order.OrderModificationNotAllowedException;
 import com.progra3.cafeteria_api.exception.order.OrderNotFoundException;
+import com.progra3.cafeteria_api.exception.paymentmethod.PaymentMethodAlreadyActiveException;
+import com.progra3.cafeteria_api.exception.paymentmethod.PaymentMethodNameAlreadyExistsException;
+import com.progra3.cafeteria_api.exception.paymentmethod.PaymentMethodNotFoundException;
 import com.progra3.cafeteria_api.exception.product.*;
 import com.progra3.cafeteria_api.exception.supplier.SupplierCuitAlreadyExistsException;
 import com.progra3.cafeteria_api.exception.supplier.SupplierEmailAlreadyExistsException;
@@ -504,6 +507,39 @@ public class GlobalHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(CustomerPhoneNumberAlreadyExistsException.class)
     public ResponseEntity<ResponseMessage> handleCustomerPhoneNumberAlreadyExistsException(CustomerPhoneNumberAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ResponseMessage.builder()
+                        .message(ex.getMessage())
+                        .status(HttpStatus.CONFLICT.value())
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(PaymentMethodNotFoundException.class)
+    public ResponseEntity<ResponseMessage> handlePaymentMethodNotFoundException(PaymentMethodNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                ResponseMessage.builder()
+                        .message(ex.getMessage())
+                        .status(HttpStatus.NOT_FOUND.value())
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(PaymentMethodNameAlreadyExistsException.class)
+    public ResponseEntity<ResponseMessage> handlePaymentMethodNameAlreadyExistsException(PaymentMethodNameAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ResponseMessage.builder()
+                        .message(ex.getMessage())
+                        .status(HttpStatus.CONFLICT.value())
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(PaymentMethodAlreadyActiveException.class)
+    public ResponseEntity<ResponseMessage> handlePaymentMethodAlreadyActiveException(PaymentMethodAlreadyActiveException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(
                 ResponseMessage.builder()
                         .message(ex.getMessage())
