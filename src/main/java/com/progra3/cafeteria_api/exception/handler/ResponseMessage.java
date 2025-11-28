@@ -20,4 +20,7 @@ public class ResponseMessage {
 
     @Schema(description = "Timestamp of the error", example = "2025-05-09T12:00:00")
     private LocalDateTime timestamp;
+
+    @Schema(description = "Error code", example = "ORDER_NOT_FOUND")
+    private String code;
 }
