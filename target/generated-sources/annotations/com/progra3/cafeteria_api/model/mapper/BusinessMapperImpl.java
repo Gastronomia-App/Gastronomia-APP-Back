@@ -4,6 +4,7 @@ import com.progra3.cafeteria_api.model.dto.AddressResponseDTO;
 import com.progra3.cafeteria_api.model.dto.BusinessRequestDTO;
 import com.progra3.cafeteria_api.model.dto.BusinessResponseDTO;
 import com.progra3.cafeteria_api.model.dto.BusinessUpdateDTO;
+import com.progra3.cafeteria_api.model.dto.EmployeeResponseDTO;
 import com.progra3.cafeteria_api.model.entity.Business;
 import javax.annotation.processing.Generated;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,8 +12,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-02T20:05:54-0300",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 25 (Oracle Corporation)"
+    date = "2025-11-30T13:58:56-0300",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 25.0.1 (Oracle Corporation)"
 )
 @Component
 public class BusinessMapperImpl implements BusinessMapper {
@@ -32,13 +33,19 @@ public class BusinessMapperImpl implements BusinessMapper {
         String name = null;
         String cuit = null;
         AddressResponseDTO address = null;
+        EmployeeResponseDTO owner = null;
 
         id = business.getId();
         name = business.getName();
         cuit = business.getCuit();
         address = addressMapper.toDTO( business.getAddress() );
+        owner = employeeMapper.toDTO( business.getOwner() );
 
-        BusinessResponseDTO businessResponseDTO = new BusinessResponseDTO( id, name, cuit, address );
+        Integer employeesCount = null;
+        Integer activeEmployeesCount = null;
+        Integer inactiveEmployeesCount = null;
+
+        BusinessResponseDTO businessResponseDTO = new BusinessResponseDTO( id, name, cuit, address, owner, employeesCount, activeEmployeesCount, inactiveEmployeesCount );
 
         return businessResponseDTO;
     }

@@ -2,7 +2,6 @@ package com.progra3.cafeteria_api.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.BatchSize;
 
 import java.util.*;
 
@@ -21,11 +20,6 @@ public class Item {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
-
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "item_id")
-    @BatchSize(size = 50)
-    private List<SelectedProductOption> selectedOptions = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "order_id", nullable = false)
@@ -46,16 +40,12 @@ public class Item {
     @Column(nullable = false)
     private Boolean deleted;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Item item = (Item) o;
-        return Objects.equals(id, item.id);
-    }
+    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<SelectedOption> selectedOptions = new ArrayList<>();
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
+    public void addOption(SelectedOption option) {
+        selectedOptions.add(option);
+        option.setItem(this);
     }
 }

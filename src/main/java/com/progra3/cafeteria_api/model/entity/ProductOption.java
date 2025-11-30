@@ -3,8 +3,6 @@ package com.progra3.cafeteria_api.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.Objects;
-
 @Entity
 @Table(name = "product_group_options")
 @AllArgsConstructor
@@ -29,17 +27,4 @@ public class ProductOption {
 
     @Column(name = "price_increase")
     private Double priceIncrease;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ProductOption that = (ProductOption) o;
-        return Objects.equals(id, that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
-    }
 }

@@ -373,6 +373,7 @@ public class OrderService implements IOrderService {
                 order.getItems()
                         .stream()
                         .filter(item -> !item.getDeleted())
+                        .filter(item -> item.getOrder().getId().equals(order.getId()))
                         .mapToDouble(Item::getTotalPrice)
                         .sum()
         );

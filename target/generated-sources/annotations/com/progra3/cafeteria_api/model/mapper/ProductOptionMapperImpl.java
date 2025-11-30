@@ -9,8 +9,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-02T20:05:54-0300",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 25 (Oracle Corporation)"
+    date = "2025-11-30T13:58:55-0300",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 25.0.1 (Oracle Corporation)"
 )
 @Component
 public class ProductOptionMapperImpl implements ProductOptionMapper {
@@ -22,16 +22,18 @@ public class ProductOptionMapperImpl implements ProductOptionMapper {
         }
 
         Long productId = null;
+        String productName = null;
         Long id = null;
         Integer maxQuantity = null;
         Double priceIncrease = null;
 
         productId = productOptionProductId( productOption );
+        productName = productOptionProductName( productOption );
         id = productOption.getId();
         maxQuantity = productOption.getMaxQuantity();
         priceIncrease = productOption.getPriceIncrease();
 
-        ProductOptionResponseDTO productOptionResponseDTO = new ProductOptionResponseDTO( id, productId, maxQuantity, priceIncrease );
+        ProductOptionResponseDTO productOptionResponseDTO = new ProductOptionResponseDTO( id, productId, productName, maxQuantity, priceIncrease );
 
         return productOptionResponseDTO;
     }
@@ -79,5 +81,20 @@ public class ProductOptionMapperImpl implements ProductOptionMapper {
             return null;
         }
         return id;
+    }
+
+    private String productOptionProductName(ProductOption productOption) {
+        if ( productOption == null ) {
+            return null;
+        }
+        Product product = productOption.getProduct();
+        if ( product == null ) {
+            return null;
+        }
+        String name = product.getName();
+        if ( name == null ) {
+            return null;
+        }
+        return name;
     }
 }

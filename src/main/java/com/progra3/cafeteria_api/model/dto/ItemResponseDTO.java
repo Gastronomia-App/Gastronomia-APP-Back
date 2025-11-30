@@ -18,7 +18,7 @@ public record ItemResponseDTO(
         ProductResponseDTO product,
 
         @Schema(description = "List of selected options for the product")
-        List<SelectedProductOptionResponseDTO> selectedOptions,
+        List<SelectedOptionResponseDTO> selectedOptions,
 
         @Schema(description = "Price per unit of the product", example = "12.50")
         Double unitPrice,

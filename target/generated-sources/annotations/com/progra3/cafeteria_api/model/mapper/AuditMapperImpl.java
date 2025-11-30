@@ -16,8 +16,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-02T20:05:54-0300",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 25 (Oracle Corporation)"
+    date = "2025-11-30T13:58:56-0300",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 25.0.1 (Oracle Corporation)"
 )
 @Component
 public class AuditMapperImpl implements AuditMapper {
@@ -43,6 +43,7 @@ public class AuditMapperImpl implements AuditMapper {
         Double totalExpensed = null;
         Double total = null;
         Double balanceGap = null;
+        Double realCash = null;
         Boolean deleted = null;
 
         id = audit.getId();
@@ -57,9 +58,10 @@ public class AuditMapperImpl implements AuditMapper {
         totalExpensed = audit.getTotalExpensed();
         total = audit.getTotal();
         balanceGap = audit.getBalanceGap();
+        realCash = audit.getRealCash();
         deleted = audit.getDeleted();
 
-        AuditResponseDTO auditResponseDTO = new AuditResponseDTO( id, startTime, closeTime, initialCash, orders, expenses, auditStatus, totalExpensed, total, balanceGap, deleted );
+        AuditResponseDTO auditResponseDTO = new AuditResponseDTO( id, startTime, closeTime, initialCash, orders, expenses, auditStatus, totalExpensed, total, balanceGap, realCash, deleted );
 
         return auditResponseDTO;
     }

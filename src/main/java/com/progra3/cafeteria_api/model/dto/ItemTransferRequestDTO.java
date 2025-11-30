@@ -1,7 +1,10 @@
 package com.progra3.cafeteria_api.model.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+
+import java.util.List;
 
 public record ItemTransferRequestDTO(
 
@@ -11,6 +14,8 @@ public record ItemTransferRequestDTO(
 
         @Schema(description = "Quantity of the item to transfer", example = "2")
         @NotNull(message = "Quantity cannot be null")
-        Integer quantity
+        @Min(1)
+        Integer quantity,
 
+        List<SelectedOptionTransferRequestDTO> optionsToMove
 ) {}

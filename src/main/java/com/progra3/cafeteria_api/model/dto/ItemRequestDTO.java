@@ -21,7 +21,7 @@ public record ItemRequestDTO(
         Integer quantity,
 
         @Schema(description = "List of selected options for the product", required = false)
-        List<SelectedProductOptionRequestDTO> selectedOptions,
+        List<SelectedOptionRequestDTO> selectedOptions,
 
         @Schema(description = "Optional comment about the item", example = "No onions", required = false)
         String comment

@@ -9,8 +9,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-02T20:05:54-0300",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 25 (Oracle Corporation)"
+    date = "2025-11-30T13:58:55-0300",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 25.0.1 (Oracle Corporation)"
 )
 @Component
 public class EmployeeMapperImpl implements EmployeeMapper {
@@ -22,6 +22,7 @@ public class EmployeeMapperImpl implements EmployeeMapper {
         }
 
         Long id = null;
+        String username = null;
         String name = null;
         String lastName = null;
         String dni = null;
@@ -30,6 +31,7 @@ public class EmployeeMapperImpl implements EmployeeMapper {
         Boolean deleted = null;
 
         id = employee.getId();
+        username = employee.getUsername();
         name = employee.getName();
         lastName = employee.getLastName();
         dni = employee.getDni();
@@ -39,7 +41,7 @@ public class EmployeeMapperImpl implements EmployeeMapper {
 
         String role = employee.getRole().name();
 
-        EmployeeResponseDTO employeeResponseDTO = new EmployeeResponseDTO( id, name, lastName, dni, phoneNumber, email, role, deleted );
+        EmployeeResponseDTO employeeResponseDTO = new EmployeeResponseDTO( id, username, name, lastName, dni, phoneNumber, email, role, deleted );
 
         return employeeResponseDTO;
     }
