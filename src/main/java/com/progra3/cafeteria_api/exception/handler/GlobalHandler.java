@@ -1,50 +1,32 @@
 package com.progra3.cafeteria_api.exception.handler;
 
-import com.progra3.cafeteria_api.exception.audit.AuditInProgressException;
-import com.progra3.cafeteria_api.exception.audit.AuditModificationNotAllowedException;
-import com.progra3.cafeteria_api.exception.audit.AuditNotFoundException;
-import com.progra3.cafeteria_api.exception.business.BusinessCuitAlreadyExistsException;
-import com.progra3.cafeteria_api.exception.business.BusinessNameAlreadyExistsException;
-import com.progra3.cafeteria_api.exception.business.BusinessNotFoundException;
-import com.progra3.cafeteria_api.exception.customer.CustomerAlreadyActiveException;
-import com.progra3.cafeteria_api.exception.customer.CustomerDniAlreadyExistsException;
-import com.progra3.cafeteria_api.exception.customer.CustomerEmailAlreadyExistsException;
-import com.progra3.cafeteria_api.exception.customer.CustomerNotFoundException;
-import com.progra3.cafeteria_api.exception.customer.CustomerPhoneNumberAlreadyExistsException;
+import com.progra3.cafeteria_api.exception.audit.*;
+import com.progra3.cafeteria_api.exception.business.*;
+import com.progra3.cafeteria_api.exception.customer.*;
 import com.progra3.cafeteria_api.exception.expense.ExpenseNotFoundException;
-import com.progra3.cafeteria_api.exception.order.ItemNotFoundException;
-import com.progra3.cafeteria_api.exception.order.OrderModificationNotAllowedException;
-import com.progra3.cafeteria_api.exception.order.OrderNotFoundException;
-import com.progra3.cafeteria_api.exception.product.CategoryCannotBeDeletedException;
-import com.progra3.cafeteria_api.exception.product.CategoryNameAlreadyExistsException;
-import com.progra3.cafeteria_api.exception.product.CategoryNotFoundException;
-import com.progra3.cafeteria_api.exception.product.NotEnoughStockException;
-import com.progra3.cafeteria_api.exception.product.ProductGroupCannotBeDeletedException;
-import com.progra3.cafeteria_api.exception.product.ProductGroupNameAlreadyExistsException;
-import com.progra3.cafeteria_api.exception.product.ProductGroupNotFoundException;
-import com.progra3.cafeteria_api.exception.product.ProductNameAlreadyExistsException;
-import com.progra3.cafeteria_api.exception.product.ProductNotFoundException;
-import com.progra3.cafeteria_api.exception.product.ProductOptionNotFoundException;
-import com.progra3.cafeteria_api.exception.seating.SeatingAlreadyExistsException;
-import com.progra3.cafeteria_api.exception.seating.SeatingModificationNotAllowed;
-import com.progra3.cafeteria_api.exception.seating.SeatingNotFoundException;
-import com.progra3.cafeteria_api.exception.supplier.SupplierAlreadyActiveException;
-import com.progra3.cafeteria_api.exception.supplier.SupplierCuitAlreadyExistsException;
-import com.progra3.cafeteria_api.exception.supplier.SupplierEmailAlreadyExistsException;
-import com.progra3.cafeteria_api.exception.supplier.SupplierLegalNameAlreadyExistsException;
-import com.progra3.cafeteria_api.exception.supplier.SupplierNotFoundException;
-import com.progra3.cafeteria_api.exception.supplier.SupplierPhoneNumberAlreadyExistsException;
+import com.progra3.cafeteria_api.exception.order.*;
+import com.progra3.cafeteria_api.exception.product.*;
+import com.progra3.cafeteria_api.exception.seating.*;
+import com.progra3.cafeteria_api.exception.supplier.*;
 import com.progra3.cafeteria_api.exception.user.*;
 import com.progra3.cafeteria_api.exception.utilities.InvalidDateException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import org.springframework.context.MessageSourceResolvable;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.sql.SQLException;
@@ -52,7 +34,16 @@ import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class GlobalHandler extends ResponseEntityExceptionHandler {
+
+    private ProblemDetail createProblemDetail(Exception ex, HttpStatus status, String errorCode) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(status, ex.getMessage());
+        problemDetail.setTitle(status.getReasonPhrase());
+        problemDetail.setProperty("code", errorCode);
+        problemDetail.setProperty("timestamp", LocalDateTime.now());
+        return problemDetail;
+    }
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
@@ -61,650 +52,333 @@ public class GlobalHandler extends ResponseEntityExceptionHandler {
             HttpStatusCode status,
             WebRequest request) {
 
-        String errors = ex.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+        String detail = ex.getBindingResult().getAllErrors().stream()
+                .map(error -> {
+                    if (error instanceof FieldError fieldError) {
+                        return fieldError.getField() + ": " + fieldError.getDefaultMessage();
+                    }
+                    return error.getDefaultMessage();
+                })
                 .collect(Collectors.joining("; "));
 
-        ResponseMessage response = ResponseMessage.builder()
-                .message("Validation errors: " + errors)
-                .status(HttpStatus.BAD_REQUEST.value())
-                .code("VALIDATION_ERROR")
-                .timestamp(LocalDateTime.now())
-                .build();
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(status, detail);
+        problemDetail.setTitle("Validation Failed");
+        problemDetail.setProperty("code", "VALIDATION_ERROR");
+        problemDetail.setProperty("timestamp", LocalDateTime.now());
 
-        return ResponseEntity.badRequest().body(response);
+        return ResponseEntity.status(status).body(problemDetail);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleHandlerMethodValidationException(
+            HandlerMethodValidationException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request) {
+
+        String detail = ex.getParameterValidationResults().stream()
+                .flatMap(result -> result.getResolvableErrors().stream())
+                .map(MessageSourceResolvable::getDefaultMessage)
+                .collect(Collectors.joining("; "));
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(status, detail);
+        problemDetail.setTitle("Validation Failed");
+        problemDetail.setProperty("code", "VALIDATION_ERROR");
+        problemDetail.setProperty("timestamp", LocalDateTime.now());
+
+        return ResponseEntity.status(status).body(problemDetail);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ProblemDetail> handleConstraintViolationException(ConstraintViolationException ex) {
+        String detail = ex.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining("; "));
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
+        problemDetail.setTitle("Constraint Violation");
+        problemDetail.setProperty("code", "CONSTRAINT_VIOLATION");
+        problemDetail.setProperty("timestamp", LocalDateTime.now());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
     }
 
     @ExceptionHandler(SQLException.class)
-    public ResponseEntity<ResponseMessage> handleSQLException(SQLException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("DATABASE_ERROR")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleSQLException(SQLException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "DATABASE_ERROR");
     }
 
     // -------------------- AUDITS --------------------
 
     @ExceptionHandler(AuditNotFoundException.class)
-    public ResponseEntity<ResponseMessage> handleAuditNotFoundException(AuditNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.NOT_FOUND.value())
-                        .code("AUDIT_NOT_FOUND")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleAuditNotFoundException(AuditNotFoundException ex) {
+        return createProblemDetail(ex, HttpStatus.NOT_FOUND, "AUDIT_NOT_FOUND");
     }
 
     @ExceptionHandler(AuditInProgressException.class)
-    public ResponseEntity<ResponseMessage> handleAuditInProgressException(AuditInProgressException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.BAD_REQUEST.value())
-                        .code("AUDIT_IN_PROGRESS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleAuditInProgressException(AuditInProgressException ex) {
+        return createProblemDetail(ex, HttpStatus.BAD_REQUEST, "AUDIT_IN_PROGRESS");
     }
 
     @ExceptionHandler(AuditModificationNotAllowedException.class)
-    public ResponseEntity<ResponseMessage> handleAuditModificationNotAllowedException(AuditModificationNotAllowedException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("AUDIT_MODIFICATION_NOT_ALLOWED")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleAuditModificationNotAllowedException(AuditModificationNotAllowedException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "AUDIT_MODIFICATION_NOT_ALLOWED");
     }
 
     // -------------------- CUSTOMERS --------------------
 
     @ExceptionHandler(CustomerAlreadyActiveException.class)
-    public ResponseEntity<ResponseMessage> handleCustomerActiveException(CustomerAlreadyActiveException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.BAD_REQUEST.value())
-                        .code("CUSTOMER_ALREADY_ACTIVE")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleCustomerActiveException(CustomerAlreadyActiveException ex) {
+        return createProblemDetail(ex, HttpStatus.BAD_REQUEST, "CUSTOMER_ALREADY_ACTIVE");
     }
 
     @ExceptionHandler(CustomerNotFoundException.class)
-    public ResponseEntity<ResponseMessage> handleCustomerNotFoundException(CustomerNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.NOT_FOUND.value())
-                        .code("CUSTOMER_NOT_FOUND")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleCustomerNotFoundException(CustomerNotFoundException ex) {
+        return createProblemDetail(ex, HttpStatus.NOT_FOUND, "CUSTOMER_NOT_FOUND");
     }
 
     @ExceptionHandler(CustomerDniAlreadyExistsException.class)
-    public ResponseEntity<ResponseMessage> handleCustomerDniAlreadyExistsException(CustomerDniAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("CUSTOMER_DNI_ALREADY_EXISTS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleCustomerDniAlreadyExistsException(CustomerDniAlreadyExistsException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "CUSTOMER_DNI_ALREADY_EXISTS");
     }
 
     @ExceptionHandler(CustomerEmailAlreadyExistsException.class)
-    public ResponseEntity<ResponseMessage> handleCustomerEmailAlreadyExistsException(CustomerEmailAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("CUSTOMER_EMAIL_ALREADY_EXISTS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleCustomerEmailAlreadyExistsException(CustomerEmailAlreadyExistsException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "CUSTOMER_EMAIL_ALREADY_EXISTS");
     }
 
     @ExceptionHandler(CustomerPhoneNumberAlreadyExistsException.class)
-    public ResponseEntity<ResponseMessage> handleCustomerPhoneNumberAlreadyExistsException(CustomerPhoneNumberAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("CUSTOMER_PHONE_NUMBER_ALREADY_EXISTS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleCustomerPhoneNumberAlreadyExistsException(CustomerPhoneNumberAlreadyExistsException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "CUSTOMER_PHONE_NUMBER_ALREADY_EXISTS");
     }
 
     // -------------------- EXPENSES --------------------
 
     @ExceptionHandler(ExpenseNotFoundException.class)
-    public ResponseEntity<ResponseMessage> handleExpenseNotFoundException(ExpenseNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.NOT_FOUND.value())
-                        .code("EXPENSE_NOT_FOUND")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleExpenseNotFoundException(ExpenseNotFoundException ex) {
+        return createProblemDetail(ex, HttpStatus.NOT_FOUND, "EXPENSE_NOT_FOUND");
     }
 
     // -------------------- ORDERS --------------------
 
     @ExceptionHandler(ItemNotFoundException.class)
-    public ResponseEntity<ResponseMessage> handleItemNotFoundException(ItemNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.NOT_FOUND.value())
-                        .code("ORDER_ITEM_NOT_FOUND")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleItemNotFoundException(ItemNotFoundException ex) {
+        return createProblemDetail(ex, HttpStatus.NOT_FOUND, "ORDER_ITEM_NOT_FOUND");
     }
 
     @ExceptionHandler(OrderModificationNotAllowedException.class)
-    public ResponseEntity<ResponseMessage> handleOrderModificationNotAllowedException(OrderModificationNotAllowedException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.BAD_REQUEST.value())
-                        .code("ORDER_MODIFICATION_NOT_ALLOWED")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleOrderModificationNotAllowedException(OrderModificationNotAllowedException ex) {
+        return createProblemDetail(ex, HttpStatus.BAD_REQUEST, "ORDER_MODIFICATION_NOT_ALLOWED");
     }
 
     @ExceptionHandler(OrderNotFoundException.class)
-    public ResponseEntity<ResponseMessage> handleOrderNotFoundException(OrderNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.NOT_FOUND.value())
-                        .code("ORDER_NOT_FOUND")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleOrderNotFoundException(OrderNotFoundException ex) {
+        return createProblemDetail(ex, HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND");
     }
 
     // -------------------- PRODUCTS / STOCK --------------------
 
     @ExceptionHandler(CategoryCannotBeDeletedException.class)
-    public ResponseEntity<ResponseMessage> handleCannotDeleteCategoryException(CategoryCannotBeDeletedException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("CATEGORY_CANNOT_BE_DELETED")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleCannotDeleteCategoryException(CategoryCannotBeDeletedException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "CATEGORY_CANNOT_BE_DELETED");
     }
 
     @ExceptionHandler(CategoryNotFoundException.class)
-    public ResponseEntity<ResponseMessage> handleCategoryNotFoundException(CategoryNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.NOT_FOUND.value())
-                        .code("CATEGORY_NOT_FOUND")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleCategoryNotFoundException(CategoryNotFoundException ex) {
+        return createProblemDetail(ex, HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND");
     }
 
     @ExceptionHandler(CategoryNameAlreadyExistsException.class)
-    public ResponseEntity<ResponseMessage> handleCategoryNameAlreadyExistsException(CategoryNameAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("CATEGORY_NAME_ALREADY_EXISTS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleCategoryNameAlreadyExistsException(CategoryNameAlreadyExistsException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "CATEGORY_NAME_ALREADY_EXISTS");
     }
 
     @ExceptionHandler(NotEnoughStockException.class)
-    public ResponseEntity<ResponseMessage> handleNotEnoughStockException(NotEnoughStockException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("NOT_ENOUGH_STOCK")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleNotEnoughStockException(NotEnoughStockException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "NOT_ENOUGH_STOCK");
     }
 
     @ExceptionHandler(ProductGroupCannotBeDeletedException.class)
-    public ResponseEntity<ResponseMessage> handleProductGroupCannotBeDeletedException(ProductGroupCannotBeDeletedException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("PRODUCT_GROUP_CANNOT_BE_DELETED")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleProductGroupCannotBeDeletedException(ProductGroupCannotBeDeletedException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "PRODUCT_GROUP_CANNOT_BE_DELETED");
     }
 
     @ExceptionHandler(ProductGroupNotFoundException.class)
-    public ResponseEntity<ResponseMessage> handleProductGroupNotFoundException(ProductGroupNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.NOT_FOUND.value())
-                        .code("PRODUCT_GROUP_NOT_FOUND")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleProductGroupNotFoundException(ProductGroupNotFoundException ex) {
+        return createProblemDetail(ex, HttpStatus.NOT_FOUND, "PRODUCT_GROUP_NOT_FOUND");
     }
 
     @ExceptionHandler(ProductGroupNameAlreadyExistsException.class)
-    public ResponseEntity<ResponseMessage> handleProductGroupNameAlreadyExistsException(ProductGroupNameAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("PRODUCT_GROUP_NAME_ALREADY_EXISTS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleProductGroupNameAlreadyExistsException(ProductGroupNameAlreadyExistsException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "PRODUCT_GROUP_NAME_ALREADY_EXISTS");
     }
 
     @ExceptionHandler(ProductNotFoundException.class)
-    public ResponseEntity<ResponseMessage> handleProductNotFoundException(ProductNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.NOT_FOUND.value())
-                        .code("PRODUCT_NOT_FOUND")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleProductNotFoundException(ProductNotFoundException ex) {
+        return createProblemDetail(ex, HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND");
     }
 
     @ExceptionHandler(ProductNameAlreadyExistsException.class)
-    public ResponseEntity<ResponseMessage> handleProductNameAlreadyExistsException(ProductNameAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("PRODUCT_NAME_ALREADY_EXISTS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleProductNameAlreadyExistsException(ProductNameAlreadyExistsException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "PRODUCT_NAME_ALREADY_EXISTS");
     }
 
     @ExceptionHandler(ProductOptionNotFoundException.class)
-    public ResponseEntity<ResponseMessage> handleProductOptionNotFoundException(ProductOptionNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.NOT_FOUND.value())
-                        .code("PRODUCT_OPTION_NOT_FOUND")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleProductOptionNotFoundException(ProductOptionNotFoundException ex) {
+        return createProblemDetail(ex, HttpStatus.NOT_FOUND, "PRODUCT_OPTION_NOT_FOUND");
     }
 
     // -------------------- SEATING --------------------
 
     @ExceptionHandler(SeatingAlreadyExistsException.class)
-    public ResponseEntity<ResponseMessage> handleSeatingAlreadyExistsException(SeatingAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("SEATING_ALREADY_EXISTS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleSeatingAlreadyExistsException(SeatingAlreadyExistsException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "SEATING_ALREADY_EXISTS");
     }
 
     @ExceptionHandler(SeatingModificationNotAllowed.class)
-    public ResponseEntity<ResponseMessage> handleSeatingModificationNotAllowedException(SeatingModificationNotAllowed ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("SEATING_MODIFICATION_NOT_ALLOWED")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleSeatingModificationNotAllowedException(SeatingModificationNotAllowed ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "SEATING_MODIFICATION_NOT_ALLOWED");
     }
 
     @ExceptionHandler(SeatingNotFoundException.class)
-    public ResponseEntity<ResponseMessage> handleSeatingNotFoundException(SeatingNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.NOT_FOUND.value())
-                        .code("SEATING_NOT_FOUND")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleSeatingNotFoundException(SeatingNotFoundException ex) {
+        return createProblemDetail(ex, HttpStatus.NOT_FOUND, "SEATING_NOT_FOUND");
     }
 
     // -------------------- SUPPLIERS --------------------
 
     @ExceptionHandler(SupplierNotFoundException.class)
-    public ResponseEntity<ResponseMessage> handleSupplierNotFoundException(SupplierNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.NOT_FOUND.value())
-                        .code("SUPPLIER_NOT_FOUND")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleSupplierNotFoundException(SupplierNotFoundException ex) {
+        return createProblemDetail(ex, HttpStatus.NOT_FOUND, "SUPPLIER_NOT_FOUND");
     }
 
     @ExceptionHandler(SupplierAlreadyActiveException.class)
-    public ResponseEntity<ResponseMessage> handleSupplierAlreadyActiveException(SupplierAlreadyActiveException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("SUPPLIER_ALREADY_ACTIVE")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleSupplierAlreadyActiveException(SupplierAlreadyActiveException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "SUPPLIER_ALREADY_ACTIVE");
     }
 
     @ExceptionHandler(SupplierCuitAlreadyExistsException.class)
-    public ResponseEntity<ResponseMessage> handleSupplierCuitAlreadyExistsException(SupplierCuitAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("SUPPLIER_CUIT_ALREADY_EXISTS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleSupplierCuitAlreadyExistsException(SupplierCuitAlreadyExistsException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "SUPPLIER_CUIT_ALREADY_EXISTS");
     }
 
     @ExceptionHandler(SupplierLegalNameAlreadyExistsException.class)
-    public ResponseEntity<ResponseMessage> handleSupplierLegalNameAlreadyExistsException(SupplierLegalNameAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("SUPPLIER_LEGAL_NAME_ALREADY_EXISTS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleSupplierLegalNameAlreadyExistsException(SupplierLegalNameAlreadyExistsException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "SUPPLIER_LEGAL_NAME_ALREADY_EXISTS");
     }
 
     @ExceptionHandler(SupplierEmailAlreadyExistsException.class)
-    public ResponseEntity<ResponseMessage> handleSupplierEmailAlreadyExistsException(SupplierEmailAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("SUPPLIER_EMAIL_ALREADY_EXISTS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleSupplierEmailAlreadyExistsException(SupplierEmailAlreadyExistsException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "SUPPLIER_EMAIL_ALREADY_EXISTS");
     }
 
     @ExceptionHandler(SupplierPhoneNumberAlreadyExistsException.class)
-    public ResponseEntity<ResponseMessage> handleSupplierPhoneNumberAlreadyExistsException(SupplierPhoneNumberAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("SUPPLIER_PHONE_NUMBER_ALREADY_EXISTS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleSupplierPhoneNumberAlreadyExistsException(SupplierPhoneNumberAlreadyExistsException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "SUPPLIER_PHONE_NUMBER_ALREADY_EXISTS");
     }
 
     // -------------------- BUSINESS --------------------
 
     @ExceptionHandler(BusinessNameAlreadyExistsException.class)
-    public ResponseEntity<ResponseMessage> handleBusinessNameAlreadyExistsException(BusinessNameAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("BUSINESS_NAME_ALREADY_EXISTS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleBusinessNameAlreadyExistsException(BusinessNameAlreadyExistsException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "BUSINESS_NAME_ALREADY_EXISTS");
     }
 
     @ExceptionHandler(BusinessCuitAlreadyExistsException.class)
-    public ResponseEntity<ResponseMessage> handleBusinessCuitAlreadyExistsException(BusinessCuitAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("BUSINESS_CUIT_ALREADY_EXISTS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleBusinessCuitAlreadyExistsException(BusinessCuitAlreadyExistsException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "BUSINESS_CUIT_ALREADY_EXISTS");
     }
 
     @ExceptionHandler(BusinessNotFoundException.class)
-    public ResponseEntity<ResponseMessage> handleBusinessNotFoundException(BusinessNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.NOT_FOUND.value())
-                        .code("BUSINESS_NOT_FOUND")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleBusinessNotFoundException(BusinessNotFoundException ex) {
+        return createProblemDetail(ex, HttpStatus.NOT_FOUND, "BUSINESS_NOT_FOUND");
     }
 
     // -------------------- USERS / EMPLOYEES --------------------
 
     @ExceptionHandler(OwnerAlreadyExistsException.class)
-    public ResponseEntity<ResponseMessage> handleAdminAlreadyExistsException(OwnerAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("OWNER_ALREADY_EXISTS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleAdminAlreadyExistsException(OwnerAlreadyExistsException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "OWNER_ALREADY_EXISTS");
     }
 
     @ExceptionHandler(OwnerCannotBeDeletedException.class)
-    public ResponseEntity<ResponseMessage> handleAdminCannotBeDeletedException(OwnerCannotBeDeletedException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("OWNER_CANNOT_BE_DELETED")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleAdminCannotBeDeletedException(OwnerCannotBeDeletedException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "OWNER_CANNOT_BE_DELETED");
     }
 
     @ExceptionHandler(EmployeeAlreadyActiveException.class)
-    public ResponseEntity<ResponseMessage> handleEmployeeAlreadyActiveException(EmployeeAlreadyActiveException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("EMPLOYEE_ALREADY_ACTIVE")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleEmployeeAlreadyActiveException(EmployeeAlreadyActiveException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "EMPLOYEE_ALREADY_ACTIVE");
     }
 
     @ExceptionHandler(EmployeeCannotBeDeletedException.class)
-    public ResponseEntity<ResponseMessage> handleEmployeeCannotBeDeletedException(EmployeeCannotBeDeletedException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("EMPLOYEE_CANNOT_BE_DELETED")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleEmployeeCannotBeDeletedException(EmployeeCannotBeDeletedException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "EMPLOYEE_CANNOT_BE_DELETED");
     }
 
     @ExceptionHandler(EmployeeDeletedException.class)
-    public ResponseEntity<ResponseMessage> handleEmployeeDeletedException(EmployeeDeletedException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.NOT_FOUND.value())
-                        .code("EMPLOYEE_DELETED")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleEmployeeDeletedException(EmployeeDeletedException ex) {
+        return createProblemDetail(ex, HttpStatus.NOT_FOUND, "EMPLOYEE_DELETED");
     }
 
     @ExceptionHandler(EmployeeNotFoundException.class)
-    public ResponseEntity<ResponseMessage> handleEmployeeNotFoundException(EmployeeNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.NOT_FOUND.value())
-                        .code("EMPLOYEE_NOT_FOUND")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleEmployeeNotFoundException(EmployeeNotFoundException ex) {
+        return createProblemDetail(ex, HttpStatus.NOT_FOUND, "EMPLOYEE_NOT_FOUND");
     }
 
     @ExceptionHandler(EmployeePermissionException.class)
-    public ResponseEntity<ResponseMessage> handleEmployeePermissionException(EmployeePermissionException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("EMPLOYEE_PERMISSION_DENIED")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleEmployeePermissionException(EmployeePermissionException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "EMPLOYEE_PERMISSION_DENIED");
     }
 
     @ExceptionHandler(InvalidPasswordException.class)
-    public ResponseEntity<ResponseMessage> handleInvalidPasswordException(InvalidPasswordException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("INVALID_PASSWORD")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleInvalidPasswordException(InvalidPasswordException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "INVALID_PASSWORD");
     }
 
     @ExceptionHandler(NoLoggedUserException.class)
-    public ResponseEntity<ResponseMessage> handleNoLoggedUserException(NoLoggedUserException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.NOT_FOUND.value())
-                        .code("NO_LOGGED_USER")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleNoLoggedUserException(NoLoggedUserException ex) {
+        return createProblemDetail(ex, HttpStatus.NOT_FOUND, "NO_LOGGED_USER");
     }
 
     @ExceptionHandler(UsernameAlreadyExistsException.class)
-    public ResponseEntity<ResponseMessage> handleUsernameAlreadyExistsException(UsernameAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("USERNAME_ALREADY_EXISTS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleUsernameAlreadyExistsException(UsernameAlreadyExistsException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "USERNAME_ALREADY_EXISTS");
     }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
-    public ResponseEntity<ResponseMessage> handleEmailAlreadyExistsException(EmailAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("EMAIL_ALREADY_EXISTS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleEmailAlreadyExistsException(EmailAlreadyExistsException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "EMAIL_ALREADY_EXISTS");
     }
 
     @ExceptionHandler(PhoneNumberAlreadyExistsException.class)
-    public ResponseEntity<ResponseMessage> handlePhoneNumberAlreadyExistsException(PhoneNumberAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("PHONE_NUMBER_ALREADY_EXISTS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handlePhoneNumberAlreadyExistsException(PhoneNumberAlreadyExistsException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "PHONE_NUMBER_ALREADY_EXISTS");
     }
 
     @ExceptionHandler(DniAlreadyExistsException.class)
-    public ResponseEntity<ResponseMessage> handleDniAlreadyExistsException(DniAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("DNI_ALREADY_EXISTS")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleDniAlreadyExistsException(DniAlreadyExistsException ex) {
+        return createProblemDetail(ex, HttpStatus.CONFLICT, "DNI_ALREADY_EXISTS");
     }
 
     // -------------------- UTILITIES --------------------
 
     @ExceptionHandler(InvalidDateException.class)
-    public ResponseEntity<ResponseMessage> handleInvalidDateException(InvalidDateException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                ResponseMessage.builder()
-                        .message(ex.getMessage())
-                        .status(HttpStatus.BAD_REQUEST.value())
-                        .code("INVALID_DATE")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleInvalidDateException(InvalidDateException ex) {
+        return createProblemDetail(ex, HttpStatus.BAD_REQUEST, "INVALID_DATE");
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ResponseMessage> handleGenericException(Exception ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ResponseMessage.builder()
-                        .message("Unexpected internal server error")
-                        .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                        .code("INTERNAL_ERROR")
-                        .timestamp(LocalDateTime.now())
-                        .build());
+    public ProblemDetail handleGenericException(Exception ex) {
+        ProblemDetail pd = createProblemDetail(ex, HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR");
+        pd.setDetail("Unexpected internal server error");
+        return pd;
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ResponseMessage> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
-        // You can log the exception here if needed
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ResponseMessage.builder()
-                        .message("Database constraint violation")
-                        .status(HttpStatus.CONFLICT.value())
-                        .code("DATABASE_CONSTRAINT_VIOLATION")
-                        .timestamp(LocalDateTime.now())
-                        .build()
-        );
+    public ProblemDetail handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        ProblemDetail pd = createProblemDetail(ex, HttpStatus.CONFLICT, "DATABASE_CONSTRAINT_VIOLATION");
+        pd.setDetail("Database constraint violation");
+        return pd;
     }
 }

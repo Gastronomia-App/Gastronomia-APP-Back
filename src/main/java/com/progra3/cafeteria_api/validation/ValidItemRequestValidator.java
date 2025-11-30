@@ -30,63 +30,107 @@ public class ValidItemRequestValidator implements ConstraintValidator<ValidItemR
         Product product = productFinderService.getEntityById(dto.productId());
 
         return switch (product.getCompositionType()) {
-            case SELECTABLE, FIXED_SELECTABLE -> validateRecursiveRules(product, dto.quantity(), dto.selectedOptions(), context);
-            case FIXED, NONE -> validateNoOptionsAllowed(dto.selectedOptions(), product.getCompositionType().name(), context);
+            case SELECTABLE, FIXED_SELECTABLE -> validateCompositeItemRoot(product, dto, context);
+            case FIXED, NONE -> validateSimpleItem(dto, product.getCompositionType().name(), context);
         };
     }
 
-    private boolean validateNoOptionsAllowed(List<SelectedOptionRequestDTO> selectedOptions, String type, ConstraintValidatorContext context) {
-        if (selectedOptions != null && !selectedOptions.isEmpty()) {
+    private boolean validateSimpleItem(ItemRequestDTO dto, String type, ConstraintValidatorContext context) {
+        if (dto.selectedOptions() != null && !dto.selectedOptions().isEmpty()) {
             return addError(context, type + " products do not accept selected options.", "selectedOptions");
         }
         return true;
     }
 
+    private boolean validateCompositeItemRoot(Product product, ItemRequestDTO dto, ConstraintValidatorContext context) {
+        // RULE 1: Root Composite items must have quantity = 1 (Explicit Instantiation)
+        if (dto.quantity() != 1) {
+            return addError(context, "Composite products must have quantity = 1. Add multiple items for larger quantities.", "quantity");
+        }
+        return validateRecursiveRules(product, dto.selectedOptions(), context);
+    }
+
     /**
-     * Main validation method.
+     * Recursive validation logic.
      */
-    private boolean validateRecursiveRules(Product currentProduct, int parentQuantity, List<SelectedOptionRequestDTO> selectedOptions, ConstraintValidatorContext context) {
+    private boolean validateRecursiveRules(Product currentProduct, List<SelectedOptionRequestDTO> selectedOptions, ConstraintValidatorContext context) {
         Set<ProductGroup> groups = currentProduct.getProductGroups();
 
-        // Validate 'Required' constraint (If groups exist but no options sent)
-        if (selectedOptions == null || selectedOptions.isEmpty()) {
+        // 1. Check Mandatory Groups
+        List<SelectedOptionRequestDTO> safeOptions = selectedOptions != null ? selectedOptions : Collections.emptyList();
+        if (safeOptions.isEmpty()) {
             return validateMandatoryGroups(currentProduct, groups, context);
         }
 
-        // Load Definitions
-        Map<Long, ProductOption> loadedOptionsMap = loadOptionsBulk(selectedOptions);
-
-        // Aggregate Selections (Count how many of each group/option)
+        // 2. Load Options
+        Map<Long, ProductOption> loadedOptionsMap = loadOptionsBulk(safeOptions);
         SelectionAggregator aggregator = new SelectionAggregator();
 
-        // Process each selection: Validate structure and Recursion
-        for (SelectedOptionRequestDTO userSelection : selectedOptions) {
+        // 3. Process Selections
+        for (SelectedOptionRequestDTO userSelection : safeOptions) {
             Long optionId = userSelection.productOptionId();
 
-            // Validate Existence & Belonging
             if (!loadedOptionsMap.containsKey(optionId)) {
-                return addError(context, "Option ID " + optionId + " not found or invalid.", "selectedOptions");
+                return addError(context, "Option ID " + optionId + " not found.", "selectedOptions");
             }
             ProductOption optionEntity = loadedOptionsMap.get(optionId);
 
             if (!isOptionValidForProduct(optionEntity, groups)) {
-                return addError(context, "Option " + optionEntity.getProduct().getName() + " does not belong to product " + currentProduct.getName(), "selectedOptions");
+                return addError(context, "Option is invalid for product " + currentProduct.getName(), "selectedOptions");
             }
 
-            // Accumulate Counts
             aggregator.add(optionEntity, userSelection.quantity());
 
-            // Recursive Step (Drill Down)
-            if (!validateRecursion(optionEntity, userSelection, context)) {
-                return false;
+            // Recursion & Nested Quantity Check
+            Product innerProduct = optionEntity.getProduct();
+            switch (innerProduct.getCompositionType()) {
+                case SELECTABLE, FIXED_SELECTABLE:
+                    // RULE 2: Nested Composite Options MUST also have quantity = 1.
+                    if (userSelection.quantity() != 1) {
+                        return addError(context, "Composite option '" + innerProduct.getName() + "' must have quantity = 1.", "selectedOptions");
+                    }
+
+                    // Continue recursion
+                    if (!validateRecursiveRules(innerProduct, userSelection.selectedOptions(), context)) {
+                        return false;
+                    }
+                    break;
+                case FIXED, NONE:
+                    // Simple options CAN have quantity > 1.
+                    if (userSelection.selectedOptions() != null && !userSelection.selectedOptions().isEmpty()) {
+                        return addError(context, "Simple option '" + innerProduct.getName() + "' cannot have children.", "selectedOptions");
+                    }
+                    break;
             }
         }
 
-        // Validate Math Constraints (Min/Max limits)
-        return validateMathConstraints(groups, parentQuantity, aggregator, context);
+        // 4. Validate Math (parentQuantity is implicit 1 for composites due to the checks above)
+        return validateMathConstraints(groups, 1, aggregator, context);
     }
 
-    // --- HELPER METHODS (The "How") ---
+    private boolean validateMathConstraints(Set<ProductGroup> groups, int parentQuantity, SelectionAggregator aggregator, ConstraintValidatorContext context) {
+        for (ProductGroup group : groups) {
+            int currentCount = aggregator.getGroupCount(group.getId());
+            int requiredMin = group.getMinQuantity() * parentQuantity;
+            int allowedMax = group.getMaxQuantity() * parentQuantity;
+
+            if (currentCount < requiredMin || currentCount > allowedMax) {
+                return addError(context, "Group '" + group.getName() + "' requires " + requiredMin + "-" + allowedMax + " selections.", "selectedOptions");
+            }
+
+            for (ProductOption optionDef : group.getOptions()) {
+                int countPerOption = aggregator.getOptionCount(optionDef.getId());
+                int optionMax = optionDef.getMaxQuantity() * parentQuantity;
+
+                if (countPerOption > optionMax) {
+                    return addError(context, "Option '" + optionDef.getProduct().getName() + "' max allowed is " + optionMax, "selectedOptions");
+                }
+            }
+        }
+        return true;
+    }
+
+    // --- HELPERS ---
 
     private boolean validateMandatoryGroups(Product product, Set<ProductGroup> groups, ConstraintValidatorContext context) {
         boolean allGroupsOptional = groups.stream().allMatch(group -> group.getMinQuantity() == 0);
@@ -97,45 +141,14 @@ public class ValidItemRequestValidator implements ConstraintValidator<ValidItemR
     }
 
     private Map<Long, ProductOption> loadOptionsBulk(List<SelectedOptionRequestDTO> selectedOptions) {
+        if (selectedOptions == null || selectedOptions.isEmpty()) return Collections.emptyMap();
         List<Long> ids = selectedOptions.stream().map(SelectedOptionRequestDTO::productOptionId).toList();
         return productOptionRepository.findAllById(ids).stream()
                 .collect(Collectors.toMap(ProductOption::getId, Function.identity()));
     }
 
     private boolean isOptionValidForProduct(ProductOption option, Set<ProductGroup> validGroups) {
-        // Checks if the option's group is one of the valid groups for the parent product
         return validGroups.stream().anyMatch(g -> g.getId().equals(option.getProductGroup().getId()));
-    }
-
-    private boolean validateRecursion(ProductOption optionEntity, SelectedOptionRequestDTO userSelection, ConstraintValidatorContext context) {
-        Product innerProduct = optionEntity.getProduct();
-        return switch (innerProduct.getCompositionType()) {
-            case SELECTABLE, FIXED_SELECTABLE -> validateRecursiveRules(innerProduct, userSelection.quantity(), userSelection.selectedOptions(), context);
-            case FIXED, NONE -> validateNoOptionsAllowed(userSelection.selectedOptions(), "Inner product (" + innerProduct.getName() + ")", context);
-        };
-    }
-
-    private boolean validateMathConstraints(Set<ProductGroup> groups, int parentQuantity, SelectionAggregator aggregator, ConstraintValidatorContext context) {
-        for (ProductGroup group : groups) {
-            int currentCount = aggregator.getGroupCount(group.getId());
-            int requiredMin = group.getMinQuantity() * parentQuantity;
-            int allowedMax = group.getMaxQuantity() * parentQuantity;
-
-            if (currentCount < requiredMin || currentCount > allowedMax) {
-                return addError(context, "Group '" + group.getName() + "' requires between " + requiredMin + " and " + allowedMax + " selections.", "selectedOptions");
-            }
-
-            // Validate max per individual option
-            for (ProductOption optionDef : group.getOptions()) {
-                int countPerOption = aggregator.getOptionCount(optionDef.getId());
-                int optionMax = optionDef.getMaxQuantity() * parentQuantity;
-
-                if (countPerOption > optionMax) {
-                    return addError(context, "Option '" + optionDef.getProduct().getName() + "' can be selected at most " + optionMax + " times.", "selectedOptions");
-                }
-            }
-        }
-        return true;
     }
 
     private boolean addError(ConstraintValidatorContext context, String message, String field) {
@@ -144,10 +157,6 @@ public class ValidItemRequestValidator implements ConstraintValidator<ValidItemR
         return false;
     }
 
-    /**
-     * Inner helper class to encapsulate the "Map Hell" logic.
-     * Keeps the main validator clean and readable.
-     */
     private static class SelectionAggregator {
         private final Map<Long, Integer> countPerGroup = new HashMap<>();
         private final Map<Long, Integer> countPerOption = new HashMap<>();
