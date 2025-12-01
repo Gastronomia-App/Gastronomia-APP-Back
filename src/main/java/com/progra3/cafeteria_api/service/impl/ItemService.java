@@ -121,8 +121,8 @@ public class ItemService implements IItemService {
                     .sum();
         }
 
-        double unitPrice = item.getProduct().getPrice();
-        item.setUnitPrice(unitPrice + optionsTotalCost);
+        double unitPrice = item.getProduct().getPrice() + optionsTotalCost;
+        item.setUnitPrice(unitPrice);
 
         // Total = (Base + Options) * Qty
         item.setTotalPrice(unitPrice * item.getQuantity());

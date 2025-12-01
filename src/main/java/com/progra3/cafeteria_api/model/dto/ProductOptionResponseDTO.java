@@ -7,10 +7,10 @@ public record ProductOptionResponseDTO(
         @Schema(description = "Unique identifier of the product option", example = "1")
         Long id,
 
-        @Schema(description = "ID of the associated product", example = "102")
+        @Schema(description = "ID of the associated product", example = "1001")
         Long productId,
 
-        @Schema(description = "Name of the associated product", example = "Tamaño Grande")
+        @Schema(description = "Name of the product option", example = "Extra Cheese")
         String productName,
 
         @Schema(description = "Maximum quantity allowed for this product option", example = "5")
@@ -18,4 +18,5 @@ public record ProductOptionResponseDTO(
 
         @Schema(description = "Additional price increase applied for this option", example = "2.5")
         Double priceIncrease
-) {}
+) {
+}

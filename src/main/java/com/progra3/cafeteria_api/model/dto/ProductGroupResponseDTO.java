@@ -1,9 +1,11 @@
 package com.progra3.cafeteria_api.model.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Builder;
 
 import java.util.List;
 
+@Builder
 public record ProductGroupResponseDTO(
         @Schema(description = "Unique identifier of the product group", example = "1")
         Long id,
@@ -19,4 +21,8 @@ public record ProductGroupResponseDTO(
 
         @Schema(description = "List of product options available in this group")
         List<ProductOptionResponseDTO> options
-) {}
+) {
+    public ProductGroupResponseDTO {
+        if (options == null) options = List.of();
+    }
+}

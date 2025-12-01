@@ -23,7 +23,7 @@ public abstract class SelectedOptionMapper {
     // --- TO ENTITY ---
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "item", ignore = true) // The Root Item is set later in ItemMapper
+    @Mapping(target = "item", ignore = true) // The Root Item is set ONLY on level 1 options in ItemMapper
     @Mapping(target = "parentOption", ignore = true) // Parent link handled in AfterMapping
     @Mapping(target = "productOption", source = "productOptionId", qualifiedByName = "mapProductOption")
     @Mapping(target = "selectedOptions", source = "selectedOptions") // Recursive mapping happens automatically
@@ -42,7 +42,8 @@ public abstract class SelectedOptionMapper {
 
     /**
      * Post-processing to establish parent-child relationships within the options tree.
-     * Note: The 'Item' (Root) reference is NOT set here, it is set in ItemMapper.
+     * Note: The 'Item' (Root) reference is set ONLY on level 1 options in ItemMapper.
+     * Nested options (level 2+) will NOT have item set - they only know their parentOption.
      */
     @AfterMapping
     protected void linkOptionRelationships(@MappingTarget SelectedOption parent) {

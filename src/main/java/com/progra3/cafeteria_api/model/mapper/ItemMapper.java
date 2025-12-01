@@ -51,26 +51,18 @@ public abstract class ItemMapper {
     }
 
     /**
-     * CRITICAL: Establishes the relationship between the Root Item and ALL its selected options (recursively).
-     * SelectedOptionMapper handles Option<->Option links, but ItemMapper must assign the 'item' owner.
+     * CRITICAL: Sets the item reference ONLY on Level 1 selected options.
+     * Nested options (level 2+) should NOT have item reference - they only know their parentOption.
+     * This prevents duplication in the JSON response.
      */
     @AfterMapping
     protected void linkItemToOptions(@MappingTarget Item item) {
         if (item.getSelectedOptions() != null) {
             item.getSelectedOptions().forEach(option -> {
-                // Link Level 1 options
+                // Only set item on Level 1 options
                 option.setItem(item);
-                // Recursively link deep children
-                setRecursiveRootItem(option, item);
-            });
-        }
-    }
-
-    private void setRecursiveRootItem(SelectedOption option, Item rootItem) {
-        if (option.getSelectedOptions() != null) {
-            option.getSelectedOptions().forEach(child -> {
-                child.setItem(rootItem); // Assign the root item owner
-                setRecursiveRootItem(child, rootItem); // Continue down the tree
+                // DO NOT recursively set item on nested options
+                // They will use getRootItem() if needed
             });
         }
     }
