@@ -131,37 +131,58 @@ public class TicketPdfService implements ITicketPdfService {
         TicketHeader header = ticket.header();
         TicketType type = ticket.type();
 
-        // Business name
+        // 1. Nombre del Negocio
         if (header.businessName() != null) {
             Paragraph title = new Paragraph(header.businessName())
                     .setFont(fontBold)
-                    .setFontSize(14f)
+                    .setFontSize(16f) // Un poco más grande
                     .setTextAlignment(TextAlignment.CENTER);
             doc.add(title);
         }
 
-        // CUIT
+        // 2. CUIT
         if (header.businessCuit() != null) {
             doc.add(new Paragraph("CUIT: " + header.businessCuit())
-                    .setFontSize(8f)
+                    .setFontSize(9f)
                     .setTextAlignment(TextAlignment.CENTER)
                     .setMarginBottom(5f));
         }
 
-        // Ticket title (only for BILL / PAYMENT)
-        if (type == TicketType.BILL || type == TicketType.PAYMENT) {
-            addDashedSeparator(doc);
-            if (header.title() != null && !header.title().isBlank()) {
-                doc.add(new Paragraph(header.title())
-                        .setFont(fontBold)
-                        .setTextAlignment(TextAlignment.CENTER)
-                        .setMarginBottom(2f));
+        // 3. Título del Ticket (Lógica mejorada)
+        String ticketTitle = "";
+
+        // Si el objeto header ya trae un título personalizado, úsalo. Si no, usa el default:
+        if (header.title() != null && !header.title().isBlank()) {
+            ticketTitle = header.title();
+        } else {
+            switch (type) {
+                case BILL:
+                    ticketTitle = "DETALLE DE CONSUMO"; // Para el cliente antes de pagar
+                    break;
+                case PAYMENT:
+                    ticketTitle = "FACTURA"; // O "TICKET FINAL"
+                    break;
+                case KITCHEN:
+                    ticketTitle = "COMANDA DE COCINA";
+                    break;
+                default:
+                    ticketTitle = "TICKET";
             }
+        }
+
+        // Solo mostramos el título si no es nulo
+        if (!ticketTitle.isEmpty()) {
+            addDashedSeparator(doc);
+            doc.add(new Paragraph(ticketTitle)
+                    .setFont(fontBold)
+                    .setFontSize(12f)
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setMarginBottom(2f));
         }
 
         addDashedSeparator(doc);
 
-        // General info in a 2-column table
+        // ... El resto de la tabla de info (Mesa, Personas, etc) queda igual ...
         Table infoTable = new Table(UnitValue.createPercentArray(new float[]{1, 1}));
         infoTable.setWidth(UnitValue.createPercentValue(100));
 
@@ -174,8 +195,6 @@ public class TicketPdfService implements ITicketPdfService {
         String personasVal = header.peopleCount() != null ? header.peopleCount().toString() : "-";
         infoTable.addCell(createCell("Personas: " + personasVal, TextAlignment.LEFT));
 
-
-
         String fechaVal = header.dateTime() != null
                 ? header.dateTime().format(DATE_TIME_FORMATTER)
                 : "-";
@@ -184,13 +203,13 @@ public class TicketPdfService implements ITicketPdfService {
         doc.add(infoTable);
 
         if (header.employeeName() != null) {
-            doc.add(new Paragraph("Camarero: " + header.employeeName()).setMarginTop(2f));
+            doc.add(new Paragraph("Mozo/a: " + header.employeeName()).setMarginTop(2f));
         }
         if (header.customerName() != null) {
             doc.add(new Paragraph("Cliente: " + header.customerName()));
         }
 
-        doc.add(new Paragraph("")); // spacing
+        doc.add(new Paragraph(""));
     }
 
     // ===========================
@@ -209,25 +228,67 @@ public class TicketPdfService implements ITicketPdfService {
 
     private void addKitchenBody(Document doc, Ticket ticket, PdfFont fontBold) {
         List<TicketItem> items = ticket.items();
+        if (items == null || items.isEmpty()) {
+            return;
+        }
 
-        for (TicketItem item : items) {
-            doc.add(new Paragraph(item.quantity() + " x " + item.productName())
-                    .setFont(fontBold)
-                    .setFontSize(10f));
+        try {
+            // Creamos una fuente Italic sobre la marcha para los extras (opcional, pero queda bien)
+            PdfFont fontItalic = PdfFontFactory.createFont(StandardFonts.HELVETICA_OBLIQUE);
 
-            for (TicketOptionGroup group : item.optionGroups()) {
-                doc.add(new Paragraph("  " + group.groupName() + ":").setFontSize(8f));
-                for (TicketOptionLine line : group.options()) {
-                    doc.add(new Paragraph("    " + line.quantity() + " x " + line.name())
-                            .setFontSize(8f));
+            for (TicketItem item : items) {
+                // 1. PRODUCTO PRINCIPAL (Más grande y separado)
+                // Ejemplo: "2 x HAMBURGUESA"
+                Paragraph mainItem = new Paragraph(item.quantity() + " x " + item.productName().toUpperCase())
+                        .setFont(fontBold)
+                        .setFontSize(11f) // Un poco más grande para lectura rápida
+                        .setMarginBottom(0f);
+                doc.add(mainItem);
+
+                // 2. EXTRAS / OPCIONES (Indentados visualmente)
+                if (item.optionGroups() != null) {
+                    item.optionGroups().forEach(group -> {
+                        if (group.options() == null || group.options().isEmpty()) {
+                            return;
+                        }
+
+                        // Opcional: Si quieres mostrar el nombre del grupo (ej: "Salsas:")
+                        // doc.add(new Paragraph(group.groupName() + ":").setFontSize(7f).setMarginLeft(10f));
+
+                        group.options().forEach(line -> {
+                            // Usamos un bullet point simple "•"
+                            String extraText = "• " + line.quantity() + " " + line.name();
+
+                            Paragraph pExtra = new Paragraph(extraText)
+                                    .setFont(fontItalic)      // Cursiva para diferenciar
+                                    .setFontSize(9f)          // Tamaño normal
+                                    .setMarginLeft(15f)       // Sangría real a la derecha
+                                    .setMarginTop(0f)
+                                    .setMarginBottom(0f);
+
+                            doc.add(pExtra);
+                        });
+                    });
                 }
-            }
 
-            if (item.comment() != null && !item.comment().isBlank()) {
-                doc.add(new Paragraph("  Comentario: " + item.comment()).setFontSize(8f));
-            }
+                // 3. COMENTARIOS (Muy importantes en cocina)
+                if (item.comment() != null && !item.comment().isBlank()) {
+                    String commentText = "NOTA: " + item.comment();
+                    Paragraph pComment = new Paragraph(commentText)
+                            .setFont(fontBold)        // Negrita para que no se pierda la nota
+                            .setFontSize(8f)
+                            .setMarginLeft(15f)
+                            .setMarginTop(2f);
+                    doc.add(pComment);
+                }
 
-            doc.add(new Paragraph(""));
+                // Línea separadora suave o espacio entre items distintos
+                doc.add(new Paragraph("").setMarginBottom(6f));
+                // Opcional: Agregar una línea punteada fina entre productos si la orden es muy larga
+                addDashedSeparator(doc);
+            }
+        } catch (IOException e) {
+            e.printStackTrace(); // Manejo simple de error de fuente
         }
     }
 
