@@ -99,6 +99,13 @@
 			<version>0.11.5</version>
 			<scope>runtime</scope>
 		</dependency>
+		<!-- iText 9 Core (AGPL license, OK for academic / open use) -->
+		<dependency>
+			<groupId>com.itextpdf</groupId>
+			<artifactId>itext7-core</artifactId>
+			<version>9.4.0</version>
+			<type>pom</type>
+		</dependency>
 	</dependencies>
 
 	<build>
