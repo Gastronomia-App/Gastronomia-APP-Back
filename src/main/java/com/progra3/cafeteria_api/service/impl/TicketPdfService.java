@@ -41,17 +41,13 @@ public class TicketPdfService implements ITicketPdfService {
     // Thermal width (~80mm)
     private static final float TICKET_WIDTH = 226f;
 
-    // Dynamic height configuration (más ajustado para reducir el blanco)
+    // Dynamic height configuration
     private static final float MIN_TICKET_HEIGHT = 260f;
-    private static final float MAX_TICKET_HEIGHT = 2000f;  // máximo de seguridad
+    private static final float MAX_TICKET_HEIGHT = 2000f;
 
-    // Estimación de alto:
-    //  - BASE_HEIGHT: header + separadores + bloque de totales
-    //  - ITEM_BLOCK_HEIGHT: cada fila de item (+ pequeño margen)
-    //  - OPTION_LINE_HEIGHT: cada sub-opción
-    private static final float BASE_HEIGHT = 230f;      // un poco menos
-    private static final float ITEM_BLOCK_HEIGHT = 24f; // ANTES: 36f
-    private static final float OPTION_LINE_HEIGHT = 12f; // ANTES: 18f
+    private static final float BASE_HEIGHT = 230f;
+    private static final float ITEM_BLOCK_HEIGHT = 24f;
+    private static final float OPTION_LINE_HEIGHT = 12f;
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
@@ -63,14 +59,11 @@ public class TicketPdfService implements ITicketPdfService {
             PdfWriter writer = new PdfWriter(baos);
             PdfDocument pdf = new PdfDocument(writer);
 
-            // Calculate dynamic height based on ticket content
             float ticketHeight = calculateTicketHeight(ticket);
             Document doc = new Document(pdf, new PageSize(TICKET_WIDTH, ticketHeight));
 
-            // Small margins to use as much paper as possible
             doc.setMargins(10, 10, 10, 10);
 
-            // Fonts
             PdfFont fontRegular = PdfFontFactory.createFont(StandardFonts.HELVETICA);
             PdfFont fontBold = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
 
@@ -90,7 +83,6 @@ public class TicketPdfService implements ITicketPdfService {
 
     /**
      * Estimate the page height based on the amount of content.
-     * We try to be as close as possible to the real content height.
      */
     private float calculateTicketHeight(Ticket ticket) {
         int itemsCount = 0;
@@ -131,16 +123,43 @@ public class TicketPdfService implements ITicketPdfService {
         TicketHeader header = ticket.header();
         TicketType type = ticket.type();
 
-        // 1. Nombre del Negocio
+        // Minimal header for kitchen tickets: mesa, fecha/hora y mozo
+        if (type == TicketType.KITCHEN) {
+            Table infoTable = new Table(UnitValue.createPercentArray(new float[]{1, 1}));
+            infoTable.setWidth(UnitValue.createPercentValue(100));
+
+            String mesaVal = header.seatingNumber() != null
+                    ? header.seatingNumber().toString()
+                    : "-";
+            infoTable.addCell(createCell("Mesa: " + mesaVal, TextAlignment.LEFT, fontBold));
+
+            String fechaVal = header.dateTime() != null
+                    ? header.dateTime().format(DATE_TIME_FORMATTER)
+                    : "-";
+            infoTable.addCell(
+                    createCell(fechaVal, TextAlignment.RIGHT, fontBold)
+                            .setFontSize(8f)
+            );
+
+            doc.add(infoTable);
+
+            if (header.employeeName() != null) {
+                doc.add(new Paragraph("Mozo/a: " + header.employeeName()).setMarginTop(2f));
+            }
+
+            doc.add(new Paragraph(""));
+            return;
+        }
+
+        // Full header for BILL / PAYMENT
         if (header.businessName() != null) {
             Paragraph title = new Paragraph(header.businessName())
                     .setFont(fontBold)
-                    .setFontSize(16f) // Un poco más grande
+                    .setFontSize(16f)
                     .setTextAlignment(TextAlignment.CENTER);
             doc.add(title);
         }
 
-        // 2. CUIT
         if (header.businessCuit() != null) {
             doc.add(new Paragraph("CUIT: " + header.businessCuit())
                     .setFontSize(9f)
@@ -148,29 +167,17 @@ public class TicketPdfService implements ITicketPdfService {
                     .setMarginBottom(5f));
         }
 
-        // 3. Título del Ticket (Lógica mejorada)
-        String ticketTitle = "";
-
-        // Si el objeto header ya trae un título personalizado, úsalo. Si no, usa el default:
+        String ticketTitle;
         if (header.title() != null && !header.title().isBlank()) {
             ticketTitle = header.title();
         } else {
             switch (type) {
-                case BILL:
-                    ticketTitle = "DETALLE DE CONSUMO"; // Para el cliente antes de pagar
-                    break;
-                case PAYMENT:
-                    ticketTitle = "FACTURA"; // O "TICKET FINAL"
-                    break;
-                case KITCHEN:
-                    ticketTitle = "COMANDA DE COCINA";
-                    break;
-                default:
-                    ticketTitle = "TICKET";
+                case BILL -> ticketTitle = "DETALLE DE CONSUMO";
+                case PAYMENT -> ticketTitle = "FACTURA";
+                default -> ticketTitle = "TICKET";
             }
         }
 
-        // Solo mostramos el título si no es nulo
         if (!ticketTitle.isEmpty()) {
             addDashedSeparator(doc);
             doc.add(new Paragraph(ticketTitle)
@@ -182,23 +189,31 @@ public class TicketPdfService implements ITicketPdfService {
 
         addDashedSeparator(doc);
 
-        // ... El resto de la tabla de info (Mesa, Personas, etc) queda igual ...
         Table infoTable = new Table(UnitValue.createPercentArray(new float[]{1, 1}));
         infoTable.setWidth(UnitValue.createPercentValue(100));
 
-        String mesaVal = header.seatingNumber() != null ? header.seatingNumber().toString() : "-";
+        String mesaVal = header.seatingNumber() != null
+                ? header.seatingNumber().toString()
+                : "-";
         infoTable.addCell(createCell("Mesa: " + mesaVal, TextAlignment.LEFT, fontBold));
 
-        String tipoVal = header.orderType() != null ? header.orderType().name() : "-";
+        String tipoVal = header.orderType() != null
+                ? header.orderType().name()
+                : "-";
         infoTable.addCell(createCell("Tipo: " + tipoVal, TextAlignment.RIGHT, fontBold));
 
-        String personasVal = header.peopleCount() != null ? header.peopleCount().toString() : "-";
+        String personasVal = header.peopleCount() != null
+                ? header.peopleCount().toString()
+                : "-";
         infoTable.addCell(createCell("Personas: " + personasVal, TextAlignment.LEFT));
 
         String fechaVal = header.dateTime() != null
                 ? header.dateTime().format(DATE_TIME_FORMATTER)
                 : "-";
-        infoTable.addCell(createCell(fechaVal, TextAlignment.RIGHT).setFontSize(8f));
+        infoTable.addCell(
+                createCell(fechaVal, TextAlignment.RIGHT)
+                        .setFontSize(8f)
+        );
 
         doc.add(infoTable);
 
@@ -233,36 +248,35 @@ public class TicketPdfService implements ITicketPdfService {
         }
 
         try {
-            // Creamos una fuente Italic sobre la marcha para los extras (opcional, pero queda bien)
             PdfFont fontItalic = PdfFontFactory.createFont(StandardFonts.HELVETICA_OBLIQUE);
 
             for (TicketItem item : items) {
-                // 1. PRODUCTO PRINCIPAL (Más grande y separado)
-                // Ejemplo: "2 x HAMBURGUESA"
+                // Main product line (e.g. "2 x HAMBURGUESA")
                 Paragraph mainItem = new Paragraph(item.quantity() + " x " + item.productName().toUpperCase())
                         .setFont(fontBold)
-                        .setFontSize(11f) // Un poco más grande para lectura rápida
+                        .setFontSize(11f)
                         .setMarginBottom(0f);
                 doc.add(mainItem);
 
-                // 2. EXTRAS / OPCIONES (Indentados visualmente)
+                // Nested options (extras) with indentation by level
                 if (item.optionGroups() != null) {
                     item.optionGroups().forEach(group -> {
                         if (group.options() == null || group.options().isEmpty()) {
                             return;
                         }
 
-                        // Opcional: Si quieres mostrar el nombre del grupo (ej: "Salsas:")
-                        // doc.add(new Paragraph(group.groupName() + ":").setFontSize(7f).setMarginLeft(10f));
-
                         group.options().forEach(line -> {
-                            // Usamos un bullet point simple "•"
                             String extraText = "• " + line.quantity() + " " + line.name();
 
+                            int level = line.level() != null ? line.level() : 1;
+                            float baseIndent = 15f;
+                            float indentPerLevel = 8f;
+                            float marginLeft = baseIndent + (level - 1) * indentPerLevel;
+
                             Paragraph pExtra = new Paragraph(extraText)
-                                    .setFont(fontItalic)      // Cursiva para diferenciar
-                                    .setFontSize(9f)          // Tamaño normal
-                                    .setMarginLeft(15f)       // Sangría real a la derecha
+                                    .setFont(fontItalic)
+                                    .setFontSize(9f)
+                                    .setMarginLeft(marginLeft)
                                     .setMarginTop(0f)
                                     .setMarginBottom(0f);
 
@@ -271,51 +285,41 @@ public class TicketPdfService implements ITicketPdfService {
                     });
                 }
 
-                // 3. COMENTARIOS (Muy importantes en cocina)
+                // Optional comment for kitchen
                 if (item.comment() != null && !item.comment().isBlank()) {
                     String commentText = "NOTA: " + item.comment();
                     Paragraph pComment = new Paragraph(commentText)
-                            .setFont(fontBold)        // Negrita para que no se pierda la nota
+                            .setFont(fontBold)
                             .setFontSize(8f)
                             .setMarginLeft(15f)
                             .setMarginTop(2f);
                     doc.add(pComment);
                 }
 
-                // Línea separadora suave o espacio entre items distintos
+                // Only vertical space between items, no dashed separator
                 doc.add(new Paragraph("").setMarginBottom(6f));
-                // Opcional: Agregar una línea punteada fina entre productos si la orden es muy larga
-                addDashedSeparator(doc);
             }
         } catch (IOException e) {
-            e.printStackTrace(); // Manejo simple de error de fuente
+            e.printStackTrace();
         }
     }
 
     private void addBillingBody(Document doc, Ticket ticket, PdfFont fontBold) {
-        // 4 columns:
-        //  - Quantity
-        //  - Separator "|"
-        //  - Description
-        //  - Amount
         float[] columnWidths = {15f, 5f, 55f, 25f};
         Table table = new Table(UnitValue.createPercentArray(columnWidths));
         table.setWidth(UnitValue.createPercentValue(100));
 
-        // Headers
         table.addHeaderCell(createCell("Cant", TextAlignment.LEFT, fontBold));
         table.addHeaderCell(createCell("|", TextAlignment.CENTER, fontBold));
         table.addHeaderCell(createCell("Descripción", TextAlignment.LEFT, fontBold));
         table.addHeaderCell(createCell("Importe", TextAlignment.RIGHT, fontBold));
 
         for (TicketItem item : ticket.items()) {
-            // Main row: "5 | Tostada   $ 7775,00"
             table.addCell(createCell(String.valueOf(item.quantity()), TextAlignment.LEFT));
             table.addCell(createCell("|", TextAlignment.CENTER));
             table.addCell(createCell(item.productName(), TextAlignment.LEFT));
             table.addCell(createCell(formatAmount(item.lineTotal()), TextAlignment.RIGHT));
 
-            // Sub-options shown below the product (no separate amount)
             if (item.optionGroups() != null) {
                 item.optionGroups().forEach(group -> {
                     if (group.options() != null) {
@@ -324,15 +328,11 @@ public class TicketPdfService implements ITicketPdfService {
                                     "- " + line.quantity() + " x " + line.name() +
                                             " (" + group.groupName() + ")";
 
-                            // Empty quantity
                             table.addCell(createCell("", TextAlignment.LEFT));
-                            // Keep separator column to align visually
                             table.addCell(createCell("|", TextAlignment.CENTER));
-                            // Option description with smaller font
                             Cell optCell = createCell(optionText, TextAlignment.LEFT);
                             optCell.setFontSize(8f);
                             table.addCell(optCell);
-                            // Empty amount (included in item line total)
                             table.addCell(createCell("", TextAlignment.RIGHT));
                         });
                     }
@@ -407,7 +407,6 @@ public class TicketPdfService implements ITicketPdfService {
     }
 
     private void addDashedSeparator(Document doc) {
-        // Simple dashed line separator
         LineSeparator separator = new LineSeparator(new DashedLine());
         separator.setMarginTop(5f);
         separator.setMarginBottom(5f);

@@ -2,6 +2,7 @@ package com.progra3.cafeteria_api.service.impl;
 
 import com.progra3.cafeteria_api.event.OrderCreatedEvent;
 import com.progra3.cafeteria_api.event.OrderFinalizedEvent;
+import com.progra3.cafeteria_api.event.OrderItemsAddedEvent;
 import com.progra3.cafeteria_api.exception.order.ItemNotFoundException;
 import com.progra3.cafeteria_api.exception.utilities.InvalidDateException;
 import com.progra3.cafeteria_api.exception.order.OrderModificationNotAllowedException;
@@ -176,22 +177,24 @@ public class OrderService implements IOrderService {
     public OrderResponseDTO addItems(Long orderId, List<ItemRequestDTO> itemRequestDTOList) {
         Order order = getEntityById(orderId);
         validateOrderStatus(order.getStatus());
-
-        List<ItemResponseDTO> itemsToAdd = itemRequestDTOList.stream()
-                .map(item -> addItem(order, item))
+        // 1) Crear los nuevos ítems
+        List<Item> newItems = itemRequestDTOList.stream()
+                .map(itemDTO -> addItemEntity(order, itemDTO))
                 .toList();
-
+        // 2) Recalcular totales de la orden
         recalculate(order);
+        Order savedOrder = orderRepository.save(order);
+        // 3) Disparar evento sólo con los ítems recién agregados
+        eventPublisher.publishEvent(new OrderItemsAddedEvent(savedOrder, newItems));
 
-        return orderMapper.toDTO(orderRepository.save(order));
+        // 4) Devolver la orden actualizada como antes
+        return orderMapper.toDTO(savedOrder);
     }
 
-    private ItemResponseDTO addItem(Order order, ItemRequestDTO itemDTO) {
+    private Item addItemEntity(Order order, ItemRequestDTO itemDTO) {
         Item newItem = itemService.createItem(order, itemDTO);
-
         order.getItems().add(newItem);
-
-        return itemMapper.toDTO(newItem);
+        return newItem;
     }
 
     @Transactional

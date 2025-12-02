@@ -1,5 +1,6 @@
 package com.progra3.cafeteria_api.controller;
 
+import com.progra3.cafeteria_api.model.entity.Item;
 import com.progra3.cafeteria_api.service.helper.SortUtils;
 import com.progra3.cafeteria_api.model.dto.*;
 import com.progra3.cafeteria_api.model.enums.OrderStatus;
@@ -339,6 +340,50 @@ public class OrderController {
     }
 
     @Operation(
+            summary = "Generate kitchen ticket for specific items",
+            description = "Generates a small PDF kitchen ticket only for the provided items of the order."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Kitchen ticket generated successfully",
+                    content = @Content(mediaType = "application/pdf")),
+            @ApiResponse(responseCode = "204", description = "No items found for the given IDs", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Order not found", content = @Content)
+    })
+    @PreAuthorize("hasAnyRole('CASHIER', 'WAITER', 'OWNER', 'ADMIN')")
+    @PostMapping(
+            value = "/{id}/tickets/kitchen",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_PDF_VALUE
+    )
+    public ResponseEntity<byte[]> generateKitchenTicketForItems(
+            @Parameter(description = "ID of the order to print the kitchen ticket for")
+            @PathVariable @NotNull Long id,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "List of item IDs to include in the kitchen ticket",
+                    required = true
+            )
+            @RequestBody List<Long> itemIds
+    ) {
+        Order order = orderService.getEntityById(id);
+
+        var ticket = ticketBuilderService.buildKitchenTicketForItems(order, itemIds);
+
+        if (ticket.items() == null || ticket.items().isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        byte[] pdf = ticketPdfService.generateTicketPdf(ticket);
+
+        return ResponseEntity
+                .ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=order-" + id + "-kitchen-partial.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .contentLength(pdf.length)
+                .body(pdf);
+    }
+
+    @Operation(
             summary = "Generate bill ticket for an order",
             description = "Generates a PDF ticket for the customer with items and totals, without payment details."
     )
@@ -350,13 +395,11 @@ public class OrderController {
     @PreAuthorize("hasAnyRole('CASHIER', 'WAITER', 'OWNER', 'ADMIN')")
     @GetMapping(
             value = "/{id}/tickets/bill",
-            produces = MediaType.APPLICATION_PDF_VALUE   // 👈 importante
+            produces = MediaType.APPLICATION_PDF_VALUE
     )
     public ResponseEntity<byte[]> generateBillTicket(
             @Parameter(description = "ID of the order to print the bill ticket for")
             @PathVariable @NotNull Long id) {
-
-        System.out.println(">>> generateBillTicket llamado para id = " + id); // 👈 DEBUG
 
         Order order = orderService.getEntityById(id);
 

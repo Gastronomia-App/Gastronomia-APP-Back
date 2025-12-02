@@ -5,10 +5,10 @@ import com.progra3.cafeteria_api.model.entity.Customer;
 import com.progra3.cafeteria_api.model.entity.Employee;
 import com.progra3.cafeteria_api.model.entity.Item;
 import com.progra3.cafeteria_api.model.entity.Order;
+import com.progra3.cafeteria_api.model.entity.Person;
 import com.progra3.cafeteria_api.model.entity.ProductOption;
 import com.progra3.cafeteria_api.model.entity.Seating;
 import com.progra3.cafeteria_api.model.entity.SelectedOption;
-import com.progra3.cafeteria_api.model.entity.Person;
 import com.progra3.cafeteria_api.model.enums.TicketType;
 import com.progra3.cafeteria_api.model.ticket.Ticket;
 import com.progra3.cafeteria_api.model.ticket.TicketHeader;
@@ -20,7 +20,8 @@ import com.progra3.cafeteria_api.service.port.ITicketBuilderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * TicketBuilderService converts Order entities into Ticket models
@@ -35,7 +36,7 @@ public class TicketBuilderService implements ITicketBuilderService {
         TicketHeader header = buildHeader(order, type);
 
         List<TicketItem> items = switch (type) {
-            case KITCHEN -> buildKitchenItems(order);
+            case KITCHEN -> buildKitchenItems(order.getItems());
             case BILL, PAYMENT -> buildBillingItems(order);
         };
 
@@ -52,6 +53,25 @@ public class TicketBuilderService implements ITicketBuilderService {
                 .build();
     }
 
+    @Override
+    public Ticket buildKitchenTicket(Order order, List<Item> items) {
+        TicketHeader header = buildHeader(order, TicketType.KITCHEN);
+        List<TicketItem> ticketItems = buildKitchenItems(items);
+
+        return Ticket.builder()
+                .type(TicketType.KITCHEN)
+                .header(header)
+                .items(ticketItems)
+                .totals(null)
+                .build();
+    }
+
+    @Override
+    public Ticket buildKitchenTicketForItems(Order order, List<Long> itemIds) {
+        List<Item> itemsToPrint = filterItemsByIds(order, itemIds);
+        return buildKitchenTicket(order, itemsToPrint);
+    }
+
     // ===========================
     // Header
     // ===========================
@@ -65,14 +85,13 @@ public class TicketBuilderService implements ITicketBuilderService {
         String businessName = null;
         String businessCuit = null;
 
-        // For now we only map basic business data (name, cuit).
         if (business != null) {
-            businessName = business.getName();   // Ajustá si el campo se llama distinto
-            businessCuit = business.getCuit();   // Idem
+            businessName = business.getName();
+            businessCuit = business.getCuit();
         }
 
         String employeeName = toPersonName(employee);
-        String customerName = toPersonName(customer); // If null, renderer will skip "Cliente:"
+        String customerName = toPersonName(customer);
 
         Integer seatingNumber = seating != null ? seating.getNumber() : null;
 
@@ -85,7 +104,6 @@ public class TicketBuilderService implements ITicketBuilderService {
         return TicketHeader.builder()
                 .businessName(businessName)
                 .businessCuit(businessCuit)
-                // businessAddress and businessPhone will remain null for now
                 .orderId(order.getId())
                 .seatingNumber(seatingNumber)
                 .orderType(order.getType())
@@ -108,12 +126,10 @@ public class TicketBuilderService implements ITicketBuilderService {
         boolean nameBlank = (name == null || name.isBlank());
         boolean lastNameBlank = (lastName == null || lastName.isBlank());
 
-        // If both are null/blank, we do not print anything
         if (nameBlank && lastNameBlank) {
             return null;
         }
 
-        // If only one is present, return that one
         if (nameBlank) {
             return lastName;
         }
@@ -121,7 +137,6 @@ public class TicketBuilderService implements ITicketBuilderService {
             return name;
         }
 
-        // Both present → "Nombre Apellido"
         return name + " " + lastName;
     }
 
@@ -129,11 +144,14 @@ public class TicketBuilderService implements ITicketBuilderService {
     // Items for KITCHEN ticket
     // ===========================
 
-    private List<TicketItem> buildKitchenItems(Order order) {
+    private List<TicketItem> buildKitchenItems(List<Item> items) {
         List<TicketItem> result = new ArrayList<>();
+        if (items == null) {
+            return result;
+        }
 
-        for (Item item : order.getItems()) {
-            if (Boolean.TRUE.equals(item.getDeleted())) {
+        for (Item item : items) {
+            if (item == null || Boolean.TRUE.equals(item.getDeleted())) {
                 continue;
             }
 
@@ -155,59 +173,71 @@ public class TicketBuilderService implements ITicketBuilderService {
         return result;
     }
 
-    private List<TicketOptionGroup> buildOptionGroups(List<SelectedOption> selectedOptions) {
-        if (selectedOptions == null || selectedOptions.isEmpty()) {
+    /**
+     * Filters items of the order by the given IDs, excluding logically deleted ones.
+     */
+    private List<Item> filterItemsByIds(Order order, List<Long> itemIds) {
+        if (order == null || order.getItems() == null || order.getItems().isEmpty()
+                || itemIds == null || itemIds.isEmpty()) {
             return List.of();
         }
 
-        // Group options by product group name, preserving insertion order
-        Map<String, List<SelectedOption>> grouped = new LinkedHashMap<>();
+        return order.getItems().stream()
+                .filter(item -> itemIds.contains(item.getId()))
+                .filter(item -> !Boolean.TRUE.equals(item.getDeleted()))
+                .toList();
+    }
 
-        for (SelectedOption selected : selectedOptions) {
-            if (selected == null) {
-                continue;
-            }
-            ProductOption productOption = selected.getProductOption();
-            if (productOption == null) {
-                continue;
-            }
-
-            String groupName;
-            if (productOption.getProductGroup() != null) {
-                groupName = productOption.getProductGroup().getName();
-            } else {
-                groupName = "Opciones"; // Fallback label if no group exists
-            }
-
-            grouped.computeIfAbsent(groupName, k -> new ArrayList<>()).add(selected);
+    /**
+     * Builds a single flattened group of options for an item, traversing
+     * all levels of SelectedOption (nested extras).
+     */
+    private List<TicketOptionGroup> buildOptionGroups(List<SelectedOption> rootOptions) {
+        if (rootOptions == null || rootOptions.isEmpty()) {
+            return List.of();
         }
 
-        List<TicketOptionGroup> groups = new ArrayList<>();
+        List<TicketOptionLine> lines = new ArrayList<>();
 
-        for (Map.Entry<String, List<SelectedOption>> entry : grouped.entrySet()) {
-            String groupName = entry.getKey();
-            List<SelectedOption> optionsInGroup = entry.getValue();
-
-            List<TicketOptionLine> optionLines = new ArrayList<>();
-
-            for (SelectedOption so : optionsInGroup) {
-                ProductOption productOption = so.getProductOption();
-                String name = productOption.getProduct().getName();
-                Integer quantity = so.getQuantity() != null ? so.getQuantity() : 1;
-
-                optionLines.add(TicketOptionLine.builder()
-                        .quantity(quantity)
-                        .name(name)
-                        .build());
-            }
-
-            groups.add(TicketOptionGroup.builder()
-                    .groupName(groupName)
-                    .options(optionLines)
-                    .build());
+        // Level 1 for options directly attached to the item
+        for (SelectedOption root : rootOptions) {
+            collectOptionLines(root, 1, lines);
         }
 
-        return groups;
+        TicketOptionGroup group = TicketOptionGroup.builder()
+                .groupName("Opciones")
+                .options(lines)
+                .build();
+
+        return List.of(group);
+    }
+
+    /**
+     * Recursively flattens the SelectedOption tree into a list of TicketOptionLine.
+     * We do not expose "level" in the model for now, only use it internally if needed.
+     */
+    private void collectOptionLines(SelectedOption option, int level, List<TicketOptionLine> acc) {
+        if (option == null || option.getProductOption() == null) {
+            return;
+        }
+
+        ProductOption productOption = option.getProductOption();
+        String name = productOption.getProduct() != null
+                ? productOption.getProduct().getName()
+                : "(Sin nombre)";
+
+        int quantity = option.getQuantity() != null ? option.getQuantity() : 1;
+
+        acc.add(TicketOptionLine.builder()
+                .quantity(quantity)
+                .name(name)
+                .build());
+
+        if (option.getSelectedOptions() != null) {
+            for (SelectedOption child : option.getSelectedOptions()) {
+                collectOptionLines(child, level + 1, acc);
+            }
+        }
     }
 
     // ===========================
@@ -265,9 +295,6 @@ public class TicketBuilderService implements ITicketBuilderService {
     // Helpers
     // ===========================
 
-    /**
-     * Normalizes blank strings to null to simplify conditional rendering.
-     */
     private String normalizeBlank(String value) {
         if (value == null) {
             return null;
