@@ -37,6 +37,10 @@ public class Order {
     @JoinColumn(name = "seating_id")
     private Seating seating;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_method_id")
+    private PaymentMethod paymentMethod;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     @BatchSize(size = 50)
     private List<Item> items = new ArrayList<>();

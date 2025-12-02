@@ -18,6 +18,7 @@ public interface IOrderService {
     OrderResponseDTO update(Long orderId, OrderRequestDTO dto);
     OrderResponseDTO updateDiscount(Long orderId, Integer discount);
     OrderResponseDTO updateStatus(Long orderId, OrderStatus status);
+    OrderResponseDTO finalizeOrder(Long orderId, Long paymentMethodId);
 
     Order getEntityById(Long orderId);
     List<Order> getByDateTimeBetween(LocalDateTime start, LocalDateTime end);

@@ -14,6 +14,7 @@ public interface OrderMapper {
     @Mapping(target = "employeeName", expression = "java(order.getEmployee() != null ? order.getEmployee().getName() : null)")
     @Mapping(target = "seatingNumber", expression = "java(order.getSeating() != null ? order.getSeating().getNumber() : null)")
     @Mapping(target = "orderType", source = "type")
+    @Mapping(target = "paymentMethodName", expression = "java(order.getPaymentMethod() != null ? order.getPaymentMethod().getName() : null)")
     OrderResponseDTO toDTO(Order order);
     @Mapping(target = "type", source = "orderType")
     Order toEntity(OrderRequestDTO orderRequestDTO);

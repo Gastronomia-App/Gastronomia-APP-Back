@@ -4,9 +4,11 @@ import com.progra3.cafeteria_api.event.OrderCreatedEvent;
 import com.progra3.cafeteria_api.event.OrderFinalizedEvent;
 import com.progra3.cafeteria_api.event.OrderItemsAddedEvent;
 import com.progra3.cafeteria_api.exception.order.ItemNotFoundException;
-import com.progra3.cafeteria_api.exception.utilities.InvalidDateException;
 import com.progra3.cafeteria_api.exception.order.OrderModificationNotAllowedException;
 import com.progra3.cafeteria_api.exception.order.OrderNotFoundException;
+import com.progra3.cafeteria_api.exception.order.PaymentMethodRequiredException;
+import com.progra3.cafeteria_api.exception.paymentmethod.PaymentMethodBusinessMismatchException;
+import com.progra3.cafeteria_api.exception.utilities.InvalidDateException;
 import com.progra3.cafeteria_api.model.dto.ItemRequestDTO;
 import com.progra3.cafeteria_api.model.dto.ItemResponseDTO;
 import com.progra3.cafeteria_api.model.dto.ItemTransferRequestDTO;
@@ -47,6 +49,7 @@ public class OrderService implements IOrderService {
     private final CustomerService customerService;
     private final SeatingService seatingService;
     private final ItemService itemService;
+    private final PaymentMethodService paymentMethodService;
     private final ApplicationEventPublisher eventPublisher;
 
     private final OrderMapper orderMapper;
@@ -146,6 +149,40 @@ public class OrderService implements IOrderService {
         order.setStatus(newStatus);
 
         if (newStatus == OrderStatus.FINALIZED && order.getSeating() != null) {
+            order.getSeating().setActiveOrder(null);
+            eventPublisher.publishEvent(new OrderFinalizedEvent(order));
+        }
+
+        return orderMapper.toDTO(orderRepository.save(order));
+    }
+
+    @Transactional
+    @Override
+    public OrderResponseDTO finalizeOrder(Long orderId, Long paymentMethodId) {
+        Order order = getEntityById(orderId);
+
+        validateOrderStatus(order.getStatus());
+
+        // Validate that payment method is provided
+        if (paymentMethodId == null) {
+            throw new PaymentMethodRequiredException();
+        }
+
+        // Validate and associate payment method
+        PaymentMethod paymentMethod = paymentMethodService.getEntityById(paymentMethodId);
+
+        // Validate that the payment method belongs to the same business
+        if (!paymentMethod.getBusiness().getId().equals(order.getBusiness().getId())) {
+            throw new PaymentMethodBusinessMismatchException(paymentMethodId, order.getBusiness().getId());
+        }
+
+        order.setPaymentMethod(paymentMethod);
+
+        seatingService.updateStatus(order.getSeating(), OrderStatus.FINALIZED);
+
+        order.setStatus(OrderStatus.FINALIZED);
+
+        if (order.getSeating() != null) {
             order.getSeating().setActiveOrder(null);
             eventPublisher.publishEvent(new OrderFinalizedEvent(order));
         }
