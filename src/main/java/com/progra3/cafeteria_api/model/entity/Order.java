@@ -37,6 +37,10 @@ public class Order {
     @JoinColumn(name = "seating_id")
     private Seating seating;
 
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 50)
+    private List<OrderPaymentMethod> orderPaymentMethods = new ArrayList<>();
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     @BatchSize(size = 50)
     private List<Item> items = new ArrayList<>();

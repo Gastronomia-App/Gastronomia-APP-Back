@@ -271,17 +271,41 @@ public class OrderController {
         return ResponseEntity.ok(orderService.transferItemsBetweenOrders(orderId, dto));
     }
 
-    @Operation(summary = "Finalize an order", description = "Marks the order as finalized, preventing further changes")
+    @Operation(
+            summary = "Finalize an order",
+            description = "Marks the order as finalized with one or more payment methods. The sum of all payment amounts must equal the order total."
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Order finalized successfully"),
-            @ApiResponse(responseCode = "404", description = "Order not found", content = @Content)
+            @ApiResponse(responseCode = "400", description = "Invalid payment methods or amount mismatch", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Order or payment method not found", content = @Content)
     })
     @PreAuthorize("hasAnyRole('CASHIER', 'OWNER', 'ADMIN')")
     @PatchMapping("/{id}/finalize")
     public ResponseEntity<OrderResponseDTO> finalizeOrder(
             @Parameter(description = "ID of the order to finalize")
-            @PathVariable @NotNull Long id) {
-        return ResponseEntity.ok(orderService.updateStatus(id, OrderStatus.FINALIZED));
+            @PathVariable @NotNull Long id,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "List of payment methods with amounts",
+                    required = true,
+                    content = @Content(
+                            schema = @Schema(implementation = OrderPaymentMethodDTO.class),
+                            examples = @ExampleObject(value = """
+                                [
+                                  {
+                                    "paymentMethodId": 1,
+                                    "amount": 500.00
+                                  },
+                                  {
+                                    "paymentMethodId": 2,
+                                    "amount": 250.50
+                                  }
+                                ]
+                                """)
+                    )
+            )
+            @RequestBody @Valid List<OrderPaymentMethodDTO> paymentMethods) {
+        return ResponseEntity.ok(orderService.finalizeOrder(id, paymentMethods));
     }
 
     @Operation(summary = "Mark an order as billed", description = "Updates the order status to BILLED, indicating the bill was printed")

@@ -4,9 +4,14 @@ import com.progra3.cafeteria_api.event.OrderCreatedEvent;
 import com.progra3.cafeteria_api.event.OrderFinalizedEvent;
 import com.progra3.cafeteria_api.event.OrderItemsAddedEvent;
 import com.progra3.cafeteria_api.exception.order.ItemNotFoundException;
-import com.progra3.cafeteria_api.exception.utilities.InvalidDateException;
 import com.progra3.cafeteria_api.exception.order.OrderModificationNotAllowedException;
 import com.progra3.cafeteria_api.exception.order.OrderNotFoundException;
+import com.progra3.cafeteria_api.exception.order.PaymentAmountMismatchException;
+import com.progra3.cafeteria_api.exception.order.PaymentMethodsEmptyException;
+import com.progra3.cafeteria_api.exception.paymentmethod.DuplicatePaymentMethodException;
+import com.progra3.cafeteria_api.exception.paymentmethod.PaymentMethodBusinessMismatchException;
+import com.progra3.cafeteria_api.exception.utilities.InvalidDateException;
+import com.progra3.cafeteria_api.model.dto.OrderPaymentMethodDTO;
 import com.progra3.cafeteria_api.model.dto.ItemRequestDTO;
 import com.progra3.cafeteria_api.model.dto.ItemResponseDTO;
 import com.progra3.cafeteria_api.model.dto.ItemTransferRequestDTO;
@@ -33,8 +38,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +51,7 @@ public class OrderService implements IOrderService {
     private final CustomerService customerService;
     private final SeatingService seatingService;
     private final ItemService itemService;
+    private final PaymentMethodService paymentMethodService;
     private final ApplicationEventPublisher eventPublisher;
 
     private final OrderMapper orderMapper;
@@ -151,6 +156,78 @@ public class OrderService implements IOrderService {
         }
 
         return orderMapper.toDTO(orderRepository.save(order));
+    }
+
+    @Transactional
+    @Override
+    public OrderResponseDTO finalizeOrder(Long orderId, List<OrderPaymentMethodDTO> paymentMethodsDTO) {
+        Order order = getEntityById(orderId);
+
+        validateOrderStatus(order.getStatus());
+
+        // Validate that at least one payment method is provided
+        if (paymentMethodsDTO == null || paymentMethodsDTO.isEmpty()) {
+            throw new PaymentMethodsEmptyException();
+        }
+
+        // Validate no duplicate payment methods
+        validateNoDuplicatePaymentMethods(paymentMethodsDTO);
+
+        // Validate that total amounts match order total
+        validateTotalAmount(order.getTotal(), paymentMethodsDTO);
+
+        // Clear existing payment methods if any
+        order.getOrderPaymentMethods().clear();
+
+        // Validate and associate payment methods
+        for (OrderPaymentMethodDTO pmDTO : paymentMethodsDTO) {
+            PaymentMethod paymentMethod = paymentMethodService.getEntityById(pmDTO.paymentMethodId());
+
+            // Validate that the payment method belongs to the same business
+            if (!paymentMethod.getBusiness().getId().equals(order.getBusiness().getId())) {
+                throw new PaymentMethodBusinessMismatchException(pmDTO.paymentMethodId(), order.getBusiness().getId());
+            }
+
+            // Create the association
+            OrderPaymentMethod orderPaymentMethod = OrderPaymentMethod.builder()
+                    .order(order)
+                    .paymentMethod(paymentMethod)
+                    .amount(pmDTO.amount())
+                    .build();
+
+            order.getOrderPaymentMethods().add(orderPaymentMethod);
+        }
+
+        seatingService.updateStatus(order.getSeating(), OrderStatus.FINALIZED);
+
+        order.setStatus(OrderStatus.FINALIZED);
+
+        if (order.getSeating() != null) {
+            order.getSeating().setActiveOrder(null);
+            eventPublisher.publishEvent(new OrderFinalizedEvent(order));
+        }
+
+        return orderMapper.toDTO(orderRepository.save(order));
+    }
+
+    private void validateNoDuplicatePaymentMethods(List<OrderPaymentMethodDTO> paymentMethodsDTO) {
+        Set<Long> paymentMethodIds = new HashSet<>();
+        for (OrderPaymentMethodDTO pmDTO : paymentMethodsDTO) {
+            if (!paymentMethodIds.add(pmDTO.paymentMethodId())) {
+                throw new DuplicatePaymentMethodException(pmDTO.paymentMethodId());
+            }
+        }
+    }
+
+    private void validateTotalAmount(Double orderTotal, List<OrderPaymentMethodDTO> paymentMethodsDTO) {
+        Double totalPaymentAmount = paymentMethodsDTO.stream()
+                .mapToDouble(OrderPaymentMethodDTO::amount)
+                .sum();
+
+        // Allow a small tolerance for floating point comparison (0.01)
+        if (Math.abs(orderTotal - totalPaymentAmount) > 0.01) {
+            throw new PaymentAmountMismatchException(orderTotal, totalPaymentAmount);
+        }
     }
 
     @Transactional

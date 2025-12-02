@@ -44,6 +44,9 @@ public record OrderResponseDTO (
         Double subtotal,
 
         @Schema(description = "Total amount after applying discount", example = "2250.0")
-        Double total
+        Double total,
+
+        @Schema(description = "List of payment methods used for this order")
+        List<OrderPaymentMethodResponseDTO> paymentMethods
 
 ) {}

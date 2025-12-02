@@ -5,6 +5,7 @@ import com.progra3.cafeteria_api.exception.business.*;
 import com.progra3.cafeteria_api.exception.customer.*;
 import com.progra3.cafeteria_api.exception.expense.ExpenseNotFoundException;
 import com.progra3.cafeteria_api.exception.order.*;
+import com.progra3.cafeteria_api.exception.paymentmethod.*;
 import com.progra3.cafeteria_api.exception.product.*;
 import com.progra3.cafeteria_api.exception.seating.*;
 import com.progra3.cafeteria_api.exception.supplier.*;
@@ -359,6 +360,33 @@ public class GlobalHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(DniAlreadyExistsException.class)
     public ProblemDetail handleDniAlreadyExistsException(DniAlreadyExistsException ex) {
         return createProblemDetail(ex, HttpStatus.CONFLICT, "DNI_ALREADY_EXISTS");
+    }
+
+    // -------------------- PAYMENT METHODS --------------------
+
+    @ExceptionHandler(com.progra3.cafeteria_api.exception.paymentmethod.PaymentMethodNotFoundException.class)
+    public ProblemDetail handlePaymentMethodNotFoundException(com.progra3.cafeteria_api.exception.paymentmethod.PaymentMethodNotFoundException ex) {
+        return createProblemDetail(ex, HttpStatus.NOT_FOUND, "PAYMENT_METHOD_NOT_FOUND");
+    }
+
+    @ExceptionHandler(com.progra3.cafeteria_api.exception.paymentmethod.PaymentMethodBusinessMismatchException.class)
+    public ProblemDetail handlePaymentMethodBusinessMismatchException(com.progra3.cafeteria_api.exception.paymentmethod.PaymentMethodBusinessMismatchException ex) {
+        return createProblemDetail(ex, HttpStatus.BAD_REQUEST, "PAYMENT_METHOD_BUSINESS_MISMATCH");
+    }
+
+    @ExceptionHandler(com.progra3.cafeteria_api.exception.order.PaymentMethodsEmptyException.class)
+    public ProblemDetail handlePaymentMethodsEmptyException(com.progra3.cafeteria_api.exception.order.PaymentMethodsEmptyException ex) {
+        return createProblemDetail(ex, HttpStatus.BAD_REQUEST, "PAYMENT_METHODS_EMPTY");
+    }
+
+    @ExceptionHandler(com.progra3.cafeteria_api.exception.order.PaymentAmountMismatchException.class)
+    public ProblemDetail handlePaymentAmountMismatchException(com.progra3.cafeteria_api.exception.order.PaymentAmountMismatchException ex) {
+        return createProblemDetail(ex, HttpStatus.BAD_REQUEST, "PAYMENT_AMOUNT_MISMATCH");
+    }
+
+    @ExceptionHandler(com.progra3.cafeteria_api.exception.paymentmethod.DuplicatePaymentMethodException.class)
+    public ProblemDetail handleDuplicatePaymentMethodException(com.progra3.cafeteria_api.exception.paymentmethod.DuplicatePaymentMethodException ex) {
+        return createProblemDetail(ex, HttpStatus.BAD_REQUEST, "DUPLICATE_PAYMENT_METHOD");
     }
 
     // -------------------- UTILITIES --------------------

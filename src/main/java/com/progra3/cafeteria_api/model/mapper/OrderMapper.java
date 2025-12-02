@@ -14,7 +14,21 @@ public interface OrderMapper {
     @Mapping(target = "employeeName", expression = "java(order.getEmployee() != null ? order.getEmployee().getName() : null)")
     @Mapping(target = "seatingNumber", expression = "java(order.getSeating() != null ? order.getSeating().getNumber() : null)")
     @Mapping(target = "orderType", source = "type")
+    @Mapping(target = "paymentMethods", expression = "java(mapPaymentMethods(order.getOrderPaymentMethods()))")
     OrderResponseDTO toDTO(Order order);
+
+    default java.util.List<com.progra3.cafeteria_api.model.dto.OrderPaymentMethodResponseDTO> mapPaymentMethods(java.util.List<com.progra3.cafeteria_api.model.entity.OrderPaymentMethod> orderPaymentMethods) {
+        if (orderPaymentMethods == null || orderPaymentMethods.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        return orderPaymentMethods.stream()
+                .map(opm -> new com.progra3.cafeteria_api.model.dto.OrderPaymentMethodResponseDTO(
+                        opm.getPaymentMethod().getId(),
+                        opm.getPaymentMethod().getName(),
+                        opm.getAmount()
+                ))
+                .toList();
+    }
     @Mapping(target = "type", source = "orderType")
     Order toEntity(OrderRequestDTO orderRequestDTO);
 }
