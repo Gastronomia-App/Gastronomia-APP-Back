@@ -374,19 +374,9 @@ public class GlobalHandler extends ResponseEntityExceptionHandler {
         return createProblemDetail(ex, HttpStatus.BAD_REQUEST, "PAYMENT_METHOD_BUSINESS_MISMATCH");
     }
 
-    @ExceptionHandler(com.progra3.cafeteria_api.exception.order.PaymentMethodsEmptyException.class)
-    public ProblemDetail handlePaymentMethodsEmptyException(com.progra3.cafeteria_api.exception.order.PaymentMethodsEmptyException ex) {
-        return createProblemDetail(ex, HttpStatus.BAD_REQUEST, "PAYMENT_METHODS_EMPTY");
-    }
-
-    @ExceptionHandler(com.progra3.cafeteria_api.exception.order.PaymentAmountMismatchException.class)
-    public ProblemDetail handlePaymentAmountMismatchException(com.progra3.cafeteria_api.exception.order.PaymentAmountMismatchException ex) {
-        return createProblemDetail(ex, HttpStatus.BAD_REQUEST, "PAYMENT_AMOUNT_MISMATCH");
-    }
-
-    @ExceptionHandler(com.progra3.cafeteria_api.exception.paymentmethod.DuplicatePaymentMethodException.class)
-    public ProblemDetail handleDuplicatePaymentMethodException(com.progra3.cafeteria_api.exception.paymentmethod.DuplicatePaymentMethodException ex) {
-        return createProblemDetail(ex, HttpStatus.BAD_REQUEST, "DUPLICATE_PAYMENT_METHOD");
+    @ExceptionHandler(com.progra3.cafeteria_api.exception.order.PaymentMethodRequiredException.class)
+    public ProblemDetail handlePaymentMethodRequiredException(com.progra3.cafeteria_api.exception.order.PaymentMethodRequiredException ex) {
+        return createProblemDetail(ex, HttpStatus.BAD_REQUEST, "PAYMENT_METHOD_REQUIRED");
     }
 
     // -------------------- UTILITIES --------------------
