@@ -43,10 +43,21 @@ public class ValidItemRequestValidator implements ConstraintValidator<ValidItemR
     }
 
     private boolean validateCompositeItemRoot(Product product, ItemRequestDTO dto, ConstraintValidatorContext context) {
-        // RULE 1: Root Composite items must have quantity = 1 (Explicit Instantiation)
-        if (dto.quantity() != 1) {
-            return addError(context, "Composite products must have quantity = 1. Add multiple items for larger quantities.", "quantity");
+        // Check if item has configuration
+        boolean hasConfiguration = dto.selectedOptions() != null && !dto.selectedOptions().isEmpty();
+
+        // RULE 1: Root Composite items WITH configuration must have quantity = 1
+        // Items WITHOUT configuration can have quantity > 1 (uniform instances)
+        if (hasConfiguration && dto.quantity() != 1) {
+            return addError(context, "Composite products with configuration must have quantity = 1. Add multiple items for different quantities.", "quantity");
         }
+
+        // If no configuration, validate only mandatory groups
+        if (!hasConfiguration) {
+            return validateMandatoryGroups(product, product.getProductGroups(), context);
+        }
+
+        // If has configuration, validate recursively
         return validateRecursiveRules(product, dto.selectedOptions(), context);
     }
 
