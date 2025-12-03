@@ -216,6 +216,10 @@ public class TicketBuilderService implements ITicketBuilderService {
      * Recursively flattens the SelectedOption tree into a list of TicketOptionLine.
      * We do not expose "level" in the model for now, only use it internally if needed.
      */
+    /**
+     * Recursively flattens the SelectedOption tree into a list of TicketOptionLine,
+     * preserving the nesting level for proper indentation in the ticket.
+     */
     private void collectOptionLines(SelectedOption option, int level, List<TicketOptionLine> acc) {
         if (option == null || option.getProductOption() == null) {
             return;
@@ -231,10 +235,12 @@ public class TicketBuilderService implements ITicketBuilderService {
         acc.add(TicketOptionLine.builder()
                 .quantity(quantity)
                 .name(name)
+                .level(level)   // <-- key: store the nesting level
                 .build());
 
         if (option.getSelectedOptions() != null) {
             for (SelectedOption child : option.getSelectedOptions()) {
+                // Children use level + 1 to support infinite nesting
                 collectOptionLines(child, level + 1, acc);
             }
         }
