@@ -1,5 +1,8 @@
 package com.progra3.cafeteria_api.service.impl;
 
+import com.itextpdf.io.font.FontProgram;
+import com.itextpdf.io.font.FontProgramFactory;
+import com.itextpdf.io.font.PdfEncodings;
 import com.itextpdf.io.font.constants.StandardFonts;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
@@ -28,7 +31,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -52,6 +57,16 @@ public class TicketPdfService implements ITicketPdfService {
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
+    // Monospace font resource (src/main/resources/fonts/DejaVuSansMono.ttf)
+    private static final String MONO_FONT_RESOURCE = "/fonts/DejaVuSansMono.ttf";
+
+    // Box-drawing characters
+    private static final String VERTICAL = "│";
+    private static final String BRANCH = "├";
+    private static final String LAST_BRANCH = "└";
+    // Bloque “vacío” para columnas de ancestros sin más hermanos
+    private static final String EMPTY_BLOCK = "\u00A0\u00A0\u00A0\u00A0"; // 4 NBSP
+
     @Override
     public byte[] generateTicketPdf(Ticket ticket) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -66,12 +81,13 @@ public class TicketPdfService implements ITicketPdfService {
 
             PdfFont fontRegular = PdfFontFactory.createFont(StandardFonts.HELVETICA);
             PdfFont fontBold = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
+            PdfFont fontMono = loadMonoFont(); // para el árbol de opciones
 
             doc.setFont(fontRegular);
             doc.setFontSize(9f);
 
             addHeader(doc, ticket, fontBold);
-            addBody(doc, ticket, fontBold);
+            addBody(doc, ticket, fontBold, fontMono);
             addTotals(doc, ticket, fontBold);
 
             doc.close();
@@ -113,6 +129,37 @@ public class TicketPdfService implements ITicketPdfService {
         }
 
         return estimated;
+    }
+
+    // ===========================
+    // Fonts
+    // ===========================
+
+    private PdfFont loadMonoFont() {
+        try (InputStream is = getClass().getResourceAsStream(MONO_FONT_RESOURCE)) {
+            if (is == null) {
+                return fallbackMonoFont();
+            }
+            byte[] fontBytes = is.readAllBytes();
+
+            FontProgram fontProgram = FontProgramFactory.createFont(fontBytes);
+
+            return PdfFontFactory.createFont(
+                    fontProgram,
+                    PdfEncodings.IDENTITY_H,
+                    PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED
+            );
+        } catch (IOException e) {
+            return fallbackMonoFont();
+        }
+    }
+
+    private PdfFont fallbackMonoFont() {
+        try {
+            return PdfFontFactory.createFont(StandardFonts.COURIER);
+        } catch (IOException ex) {
+            throw new IllegalStateException("Error loading fallback mono font", ex);
+        }
     }
 
     // ===========================
@@ -231,76 +278,69 @@ public class TicketPdfService implements ITicketPdfService {
     // Body
     // ===========================
 
-    private void addBody(Document doc, Ticket ticket, PdfFont fontBold) {
+    private void addBody(Document doc, Ticket ticket, PdfFont fontBold, PdfFont fontMono) {
         addDashedSeparator(doc);
 
         if (ticket.type() == TicketType.KITCHEN) {
-            addKitchenBody(doc, ticket, fontBold);
+            addKitchenBody(doc, ticket, fontBold, fontMono);
         } else {
             addBillingBody(doc, ticket, fontBold);
         }
     }
-
-    private void addKitchenBody(Document doc, Ticket ticket, PdfFont fontBold) {
+    private void debugOptionLines(List<TicketOptionLine> lines) {
+        System.out.println("---- OPTION LINES ----");
+        for (int i = 0; i < lines.size(); i++) {
+            TicketOptionLine l = lines.get(i);
+            System.out.printf(
+                    "%d -> level=%d, qty=%d, name=%s%n",
+                    i,
+                    l.level(),
+                    l.quantity(),
+                    l.name()
+            );
+        }
+    }
+    private void addKitchenBody(Document doc, Ticket ticket, PdfFont fontBold, PdfFont fontMono) {
         List<TicketItem> items = ticket.items();
         if (items == null || items.isEmpty()) {
             return;
         }
 
-        try {
-            PdfFont fontItalic = PdfFontFactory.createFont(StandardFonts.HELVETICA_OBLIQUE);
+        for (TicketItem item : items) {
+            // Main product line (e.g. "2 x HAMBURGUESA")
+            Paragraph mainItem = new Paragraph(item.quantity() + " x " + item.productName().toUpperCase())
+                    .setFont(fontBold)
+                    .setFontSize(11f)
+                    .setMarginBottom(0f);
+            doc.add(mainItem);
 
-            for (TicketItem item : items) {
-                // Main product line (e.g. "2 x HAMBURGUESA")
-                Paragraph mainItem = new Paragraph(item.quantity() + " x " + item.productName().toUpperCase())
-                        .setFont(fontBold)
-                        .setFontSize(11f)
-                        .setMarginBottom(0f);
-                doc.add(mainItem);
-
-                // Nested options (extras) with indentation by level
-                if (item.optionGroups() != null) {
-                    item.optionGroups().forEach(group -> {
-                        if (group.options() == null || group.options().isEmpty()) {
-                            return;
-                        }
-
-                        group.options().forEach(line -> {
-                            String extraText = "• " + line.quantity() + " " + line.name();
-
-                            int level = line.level() != null ? line.level() : 1;
-                            float baseIndent = 15f;
-                            float indentPerLevel = 8f;
-                            float marginLeft = baseIndent + (level - 1) * indentPerLevel;
-
-                            Paragraph pExtra = new Paragraph(extraText)
-                                    .setFont(fontItalic)
-                                    .setFontSize(9f)
-                                    .setMarginLeft(marginLeft)
-                                    .setMarginTop(0f)
-                                    .setMarginBottom(0f);
-
-                            doc.add(pExtra);
-                        });
-                    });
-                }
-
-                // Optional comment for kitchen
-                if (item.comment() != null && !item.comment().isBlank()) {
-                    String commentText = "NOTA: " + item.comment();
-                    Paragraph pComment = new Paragraph(commentText)
-                            .setFont(fontBold)
-                            .setFontSize(8f)
-                            .setMarginLeft(15f)
-                            .setMarginTop(2f);
-                    doc.add(pComment);
-                }
-
-                // Only vertical space between items, no dashed separator
-                doc.add(new Paragraph("").setMarginBottom(6f));
+            // Collect all option lines for this item
+            List<TicketOptionLine> optionLines = new ArrayList<>();
+            if (item.optionGroups() != null) {
+                item.optionGroups().forEach(group -> {
+                    if (group.options() != null && !group.options().isEmpty()) {
+                        optionLines.addAll(group.options());
+                    }
+                });
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+
+            // Render options as ASCII tree
+            debugOptionLines(optionLines);
+            addOptionTree(doc, optionLines, fontMono);
+
+            // Optional comment for kitchen
+            if (item.comment() != null && !item.comment().isBlank()) {
+                String commentText = "NOTA: " + item.comment();
+                Paragraph pComment = new Paragraph(commentText)
+                        .setFont(fontBold)
+                        .setFontSize(8f)
+                        .setMarginLeft(15f)
+                        .setMarginTop(2f);
+                doc.add(pComment);
+            }
+
+            // Space between items
+            doc.add(new Paragraph("").setMarginBottom(6f));
         }
     }
 
@@ -418,5 +458,91 @@ public class TicketPdfService implements ITicketPdfService {
             return "$ 0.00";
         }
         return String.format("$ %.2f", value);
+    }
+
+    // ===========================
+    // Tree helpers for kitchen options
+    // ===========================
+
+    private int getLevelOrDefault(TicketOptionLine line) {
+        return line.level() != null ? line.level() : 1;
+    }
+
+    /**
+     * Builds a tree-like prefix for the given option line using box-drawing
+     * characters (├, └, │). In this version we always draw a vertical line
+     * for every ancestor level so children are visually attached to their parent
+     * even if the parent is the last sibling.
+     */
+    private String buildTreePrefix(List<TicketOptionLine> lines, int index) {
+        TicketOptionLine current = lines.get(index);
+        int currentLevel = getLevelOrDefault(current);
+        StringBuilder prefix = new StringBuilder();
+
+        // 1) Columnas de los ancestros (niveles 1 .. currentLevel-1)
+        for (int level = 1; level < currentLevel; level++) {
+            boolean hasMoreAtThisLevel = false;
+
+            // ¿Hay alguna línea más adelante en este mismo nivel 'level'?
+            for (int j = index + 1; j < lines.size(); j++) {
+                int levelJ = getLevelOrDefault(lines.get(j));
+
+                if (levelJ < level) {
+                    // Ya salimos del bloque de este nivel
+                    break;
+                }
+                if (levelJ == level) {
+                    hasMoreAtThisLevel = true;
+                    break;
+                }
+            }
+
+            if (hasMoreAtThisLevel) {
+                prefix.append(VERTICAL).append("   ");     // "│   "
+            } else {
+                prefix.append(EMPTY_BLOCK);               // NBSP NBSP NBSP NBSP
+            }
+        }
+
+        // 2) Rama de la línea actual (├ o └)
+        boolean hasNextSameLevel = false;
+        for (int j = index + 1; j < lines.size(); j++) {
+            int levelJ = getLevelOrDefault(lines.get(j));
+            if (levelJ < currentLevel) {
+                break;
+            }
+            if (levelJ == currentLevel) {
+                hasNextSameLevel = true;
+                break;
+            }
+        }
+
+        String branch = hasNextSameLevel ? BRANCH : LAST_BRANCH; // "├" o "└"
+        prefix.append(branch).append("── ");
+
+        return prefix.toString();
+    }
+
+    private void addOptionTree(Document doc, List<TicketOptionLine> optionLines, PdfFont fontMono) {
+        if (optionLines == null || optionLines.isEmpty()) {
+            return;
+        }
+
+        for (int i = 0; i < optionLines.size(); i++) {
+            TicketOptionLine line = optionLines.get(i);
+
+            String treePrefix = buildTreePrefix(optionLines, i);
+            int qty = line.quantity() != null ? line.quantity() : 1;
+            String label = qty + " x " + line.name();
+
+            Paragraph p = new Paragraph(treePrefix + label)
+                    .setFont(fontMono)
+                    .setFontSize(9f)
+                    .setMarginLeft(5f)
+                    .setMarginTop(0f)
+                    .setMarginBottom(0f);
+
+            doc.add(p);
+        }
     }
 }

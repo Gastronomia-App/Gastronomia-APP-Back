@@ -161,10 +161,10 @@ public class TicketBuilderService implements ITicketBuilderService {
             TicketItem ticketItem = TicketItem.builder()
                     .quantity(item.getQuantity())
                     .productName(item.getProduct().getName())
-                    .unitPrice(null)      // Prices are not shown in kitchen tickets
+                    .unitPrice(null)      // no prices in kitchen tickets
                     .lineTotal(null)
                     .optionGroups(optionGroups)
-                    .comment(comment)     // Printed below each item if not null
+                    .comment(comment)
                     .build();
 
             result.add(ticketItem);
@@ -199,9 +199,8 @@ public class TicketBuilderService implements ITicketBuilderService {
 
         List<TicketOptionLine> lines = new ArrayList<>();
 
-        // Level 1 for options directly attached to the item
         for (SelectedOption root : rootOptions) {
-            collectOptionLines(root, 1, lines);
+            collectOptionLines(root, 1, lines); // level 1 for direct options
         }
 
         TicketOptionGroup group = TicketOptionGroup.builder()
@@ -213,12 +212,8 @@ public class TicketBuilderService implements ITicketBuilderService {
     }
 
     /**
-     * Recursively flattens the SelectedOption tree into a list of TicketOptionLine.
-     * We do not expose "level" in the model for now, only use it internally if needed.
-     */
-    /**
      * Recursively flattens the SelectedOption tree into a list of TicketOptionLine,
-     * preserving the nesting level for proper indentation in the ticket.
+     * preserving the nesting level for proper tree rendering.
      */
     private void collectOptionLines(SelectedOption option, int level, List<TicketOptionLine> acc) {
         if (option == null || option.getProductOption() == null) {
@@ -235,12 +230,11 @@ public class TicketBuilderService implements ITicketBuilderService {
         acc.add(TicketOptionLine.builder()
                 .quantity(quantity)
                 .name(name)
-                .level(level)   // <-- key: store the nesting level
+                .level(level)
                 .build());
 
         if (option.getSelectedOptions() != null) {
             for (SelectedOption child : option.getSelectedOptions()) {
-                // Children use level + 1 to support infinite nesting
                 collectOptionLines(child, level + 1, acc);
             }
         }
@@ -263,8 +257,8 @@ public class TicketBuilderService implements ITicketBuilderService {
                     .productName(item.getProduct().getName())
                     .unitPrice(item.getUnitPrice())
                     .lineTotal(item.getTotalPrice())
-                    .optionGroups(List.of()) // Options are not shown in billing tickets for now
-                    .comment(null)           // Comments not shown in billing tickets
+                    .optionGroups(List.of())
+                    .comment(null)
                     .build();
 
             result.add(ticketItem);
@@ -286,7 +280,7 @@ public class TicketBuilderService implements ITicketBuilderService {
 
         Double total = defaultZero(order.getTotal());
 
-        boolean printInvoiceWarning = true; // For now we always show "Este documento no es factura."
+        boolean printInvoiceWarning = true;
 
         return TicketTotals.builder()
                 .subtotal(subtotal)
