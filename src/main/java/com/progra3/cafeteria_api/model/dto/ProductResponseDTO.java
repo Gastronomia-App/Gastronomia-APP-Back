@@ -43,6 +43,10 @@ public record ProductResponseDTO(
         List<ProductComponentResponseDTO> components,
 
         @Schema(description = "List of product groups the product belongs to", example = "[\"Promociones\", \"Especiales\"]")
-        List<ProductGroupResponseDTO> productGroups
+        List<ProductGroupResponseDTO> productGroups,
+
+        @Schema(description = "Public URL of the product image",
+                example = "/uploads/products/cafe-latte-123.jpg")
+        String imageUrl
 
 ) { }

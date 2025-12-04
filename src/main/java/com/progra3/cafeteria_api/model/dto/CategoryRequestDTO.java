@@ -1,5 +1,6 @@
 package com.progra3.cafeteria_api.model.dto;
 
+import com.progra3.cafeteria_api.model.enums.CategoryIcon;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -8,6 +9,7 @@ import lombok.*;
 
 @Builder
 public record CategoryRequestDTO(
+
         @Schema(description = "Name of the category",
                 example = "Beverages",
                 required = true,
@@ -19,5 +21,13 @@ public record CategoryRequestDTO(
 
         @Schema(description = "Color associated with the category in HEX format",
                 example = "#FF5733")
-        String color
+        String color,
+
+        @Schema(description = "Icon representing the category",
+                example = "BEVERAGES")
+        CategoryIcon icon,
+
+        @Schema(description = "Whether this category should be visible in the menu. " +
+                "If null, it is treated as visible by default.")
+        Boolean visibleInMenu
 ) { }

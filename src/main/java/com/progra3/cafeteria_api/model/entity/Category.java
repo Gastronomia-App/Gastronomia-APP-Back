@@ -1,5 +1,6 @@
 package com.progra3.cafeteria_api.model.entity;
 
+import com.progra3.cafeteria_api.model.enums.CategoryIcon;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,6 +26,13 @@ public class Category {
     private String name;
 
     private String color;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "icon")
+    private CategoryIcon icon;
+
+    @Column(name = "visible_in_menu")
+    private Boolean visibleInMenu;
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
     private List<Product> products = new ArrayList<>();

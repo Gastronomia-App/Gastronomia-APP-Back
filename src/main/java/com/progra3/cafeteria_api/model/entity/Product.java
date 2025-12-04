@@ -45,6 +45,9 @@ public class Product {
     @Column
     private Integer stock;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @OneToMany(mappedBy = "parentProduct", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 50)
     private Set<ProductComponent> components = new HashSet<>();

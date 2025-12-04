@@ -51,6 +51,11 @@ public record ProductRequestDTO(
 
         @Schema(description = "List of product group IDs this product belongs to",
                 example = "[1, 2, 3]")
-        List<Long> productGroups
+        List<Long> productGroups,
+
+        @Schema(description = "URL of the product image previously uploaded",
+                example = "/uploads/products/cafe-latte-123.jpg")
+        String imageUrl
+
 ) { }
 

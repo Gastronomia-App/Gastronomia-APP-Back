@@ -29,6 +29,11 @@ public class CategoryService implements ICategoryService {
     public CategoryResponseDTO createCategory(CategoryRequestDTO categoryRequestDTO) {
         Category category = categoryMapper.toEntity(categoryRequestDTO);
         category.setBusiness(employeeContext.getCurrentBusiness());
+        // Icon can be null (optional)
+        category.setIcon(categoryRequestDTO.icon());
+        // If visibleInMenu is null, default to true
+        Boolean visibleInMenu = categoryRequestDTO.visibleInMenu();
+        category.setVisibleInMenu(visibleInMenu == null ? Boolean.TRUE : visibleInMenu);
         return categoryMapper.toDTO(categoryRepository.save(category));
     }
 
@@ -66,6 +71,15 @@ public class CategoryService implements ICategoryService {
 
         categoryToUpdate.setName(categoryRequestDTO.name());
         categoryToUpdate.setColor(categoryRequestDTO.color());
+
+        // ✅ Icon: null ahora significa "borrar el icono"
+        categoryToUpdate.setIcon(categoryRequestDTO.icon());
+
+        // visibleInMenu sigue siendo opcional
+        if (categoryRequestDTO.visibleInMenu() != null) {
+            categoryToUpdate.setVisibleInMenu(categoryRequestDTO.visibleInMenu());
+        }
+
         return categoryMapper.toDTO(categoryRepository.save(categoryToUpdate));
     }
 

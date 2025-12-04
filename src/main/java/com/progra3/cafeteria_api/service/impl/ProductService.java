@@ -13,6 +13,7 @@ import com.progra3.cafeteria_api.model.entity.ProductComponent;
 import com.progra3.cafeteria_api.model.entity.ProductGroup;
 import com.progra3.cafeteria_api.repository.ProductRepository;
 import com.progra3.cafeteria_api.security.EmployeeContext;
+import com.progra3.cafeteria_api.service.port.IProductImageStorageService;
 import com.progra3.cafeteria_api.service.port.IProductService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class ProductService implements IProductService {
     private final CategoryService categoryService;
     private final ProductGroupService productGroupService;
     private final ProductComponentMapper productComponentMapper;
+    private final IProductImageStorageService productImageStorageService; // <- NUEVO
 
     private final ProductMapper productMapper;
 
@@ -72,24 +74,41 @@ public class ProductService implements IProductService {
 
     @Transactional
     @Override
-    public ProductResponseDTO updateProduct(Long id, ProductRequestDTO productRequestDTO) {
+    public ProductResponseDTO updateProduct(Long id, ProductRequestDTO dto) {
         Product product = getEntityById(id);
         Long businessId = employeeContext.getCurrentBusinessId();
 
-        // Validate name uniqueness if changed
-        if (!productRequestDTO.name().equals(product.getName())) {
-            if (productRepository.existsByNameAndBusiness_Id(productRequestDTO.name(), businessId)) {
-                throw new ProductNameAlreadyExistsException(productRequestDTO.name());
-            }
+        if (!dto.name().equals(product.getName()) &&
+                productRepository.existsByNameAndBusiness_Id(dto.name(), businessId)) {
+            throw new ProductNameAlreadyExistsException(dto.name());
         }
 
-        Category category = categoryService.getEntityById(productRequestDTO.categoryId());
+        Category category = categoryService.getEntityById(dto.categoryId());
 
-        productMapper.updateProductFromDTO(product, productRequestDTO);
+        String oldImageUrl = product.getImageUrl();
+
+        productMapper.updateProductFromDTO(product, dto);
         product.setCategory(category);
+
+        String newImageUrl = dto.imageUrl();
+
+        // User cleared the image explicitly
+        if (newImageUrl == null && oldImageUrl != null) {
+            productImageStorageService.delete(oldImageUrl);
+            product.setImageUrl(null);
+        }
+
+        // User sent a different image url
+        if (newImageUrl != null && !newImageUrl.equals(oldImageUrl)) {
+            if (oldImageUrl != null) {
+                productImageStorageService.delete(oldImageUrl);
+            }
+            product.setImageUrl(newImageUrl);
+        }
 
         return productMapper.toDTO(productRepository.save(product));
     }
+
 
     @Transactional
     @Override
@@ -101,6 +120,8 @@ public class ProductService implements IProductService {
     @Override
     public ProductResponseDTO deleteProduct(Long id) {
         Product product = getEntityById(id);
+
+        String oldImageUrl = product.getImageUrl(); // guardar URL antes de tocar nada
         ProductResponseDTO productDTO = productMapper.toDTO(product);
 
         // 1. Clear ProductGroups (ManyToMany relationship)
@@ -113,8 +134,11 @@ public class ProductService implements IProductService {
         // 3. Clear usedInProducts (ProductComponents where this product is used)
         product.getUsedInProducts().clear();
 
-        // 4. Delete the product (components will be deleted automatically due to orphanRemoval)
+        // 4. Delete the product
         productRepository.delete(product);
+
+        // 5. Delete image file (if exists)
+        productImageStorageService.delete(oldImageUrl);
 
         return productDTO;
     }
