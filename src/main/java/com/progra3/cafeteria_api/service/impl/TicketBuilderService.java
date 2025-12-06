@@ -10,12 +10,12 @@ import com.progra3.cafeteria_api.model.entity.ProductOption;
 import com.progra3.cafeteria_api.model.entity.Seating;
 import com.progra3.cafeteria_api.model.entity.SelectedOption;
 import com.progra3.cafeteria_api.model.enums.TicketType;
-import com.progra3.cafeteria_api.model.ticket.Ticket;
-import com.progra3.cafeteria_api.model.ticket.TicketHeader;
-import com.progra3.cafeteria_api.model.ticket.TicketItem;
-import com.progra3.cafeteria_api.model.ticket.TicketOptionGroup;
-import com.progra3.cafeteria_api.model.ticket.TicketOptionLine;
-import com.progra3.cafeteria_api.model.ticket.TicketTotals;
+import com.progra3.cafeteria_api.model.dto.ticket.Ticket;
+import com.progra3.cafeteria_api.model.dto.ticket.TicketHeader;
+import com.progra3.cafeteria_api.model.dto.ticket.TicketItem;
+import com.progra3.cafeteria_api.model.dto.ticket.TicketOptionGroup;
+import com.progra3.cafeteria_api.model.dto.ticket.TicketOptionLine;
+import com.progra3.cafeteria_api.model.dto.ticket.TicketTotals;
 import com.progra3.cafeteria_api.service.port.ITicketBuilderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -83,7 +83,7 @@ public class TicketBuilderService implements ITicketBuilderService {
         Customer customer = order.getCustomer();
 
         String businessName = null;
-        String businessCuit = null;
+        Long businessCuit = null;
 
         if (business != null) {
             businessName = business.getName();

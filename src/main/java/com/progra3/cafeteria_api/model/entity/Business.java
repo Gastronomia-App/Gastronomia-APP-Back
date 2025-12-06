@@ -23,7 +23,7 @@ public class Business {
     private String name;
 
     @Column(nullable = false, unique = true)
-    private String cuit;
+    private Long cuit;
 
     @Embedded
     @Column(nullable = false)

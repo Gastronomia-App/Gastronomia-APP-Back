@@ -10,7 +10,7 @@ public class ValidBusinessRequestValidator implements ConstraintValidator<ValidB
     public boolean isValid(BusinessRequestDTO dto, ConstraintValidatorContext context) {
         boolean isValid = true;
 
-        if (!dto.cuit().matches("\\d{11}")) {
+        if (dto.cuit() == null || dto.cuit() < 10_000_000_000L || dto.cuit() > 99_999_999_999L) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate("CUIT must be an 11-digit number")
                     .addPropertyNode("cuit")

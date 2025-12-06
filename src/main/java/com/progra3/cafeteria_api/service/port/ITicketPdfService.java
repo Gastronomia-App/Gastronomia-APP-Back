@@ -1,6 +1,6 @@
 package com.progra3.cafeteria_api.service.port;
 
-import com.progra3.cafeteria_api.model.ticket.Ticket;
+import com.progra3.cafeteria_api.model.dto.ticket.Ticket;
 
 /**
  * ITicketPdfService generates a PDF representation for a given Ticket model.

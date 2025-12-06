@@ -39,7 +39,7 @@ public class TraSigner {
     public byte[] signTra(String traXml) {
         try {
             KeyStore keyStore = loadKeyStore();
-            String alias = Collections.list(keyStore.aliases()).get(0);
+            String alias = Collections.list(keyStore.aliases()).getFirst();
 
             PrivateKey privateKey = (PrivateKey) keyStore.getKey(
                     alias,

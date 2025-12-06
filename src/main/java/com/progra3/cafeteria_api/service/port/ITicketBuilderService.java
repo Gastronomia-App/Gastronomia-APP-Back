@@ -3,7 +3,7 @@ package com.progra3.cafeteria_api.service.port;
 import com.progra3.cafeteria_api.model.entity.Item;
 import com.progra3.cafeteria_api.model.entity.Order;
 import com.progra3.cafeteria_api.model.enums.TicketType;
-import com.progra3.cafeteria_api.model.ticket.Ticket;
+import com.progra3.cafeteria_api.model.dto.ticket.Ticket;
 
 import java.util.List;
 

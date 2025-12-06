@@ -3,7 +3,7 @@ package com.progra3.cafeteria_api.listener;
 import com.progra3.cafeteria_api.event.OrderItemsAddedEvent;
 import com.progra3.cafeteria_api.model.entity.Item;
 import com.progra3.cafeteria_api.model.entity.Order;
-import com.progra3.cafeteria_api.model.ticket.Ticket;
+import com.progra3.cafeteria_api.model.dto.ticket.Ticket;
 import com.progra3.cafeteria_api.service.port.ITicketBuilderService;
 import com.progra3.cafeteria_api.service.port.ITicketPdfService;
 import lombok.RequiredArgsConstructor;
