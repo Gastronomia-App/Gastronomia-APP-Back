@@ -1,6 +1,7 @@
 package com.progra3.cafeteria_api.model.mapper;
 
 import com.progra3.cafeteria_api.model.dto.ItemResponseDTO;
+import com.progra3.cafeteria_api.model.dto.OrderPaymentMethodResponseDTO;
 import com.progra3.cafeteria_api.model.dto.OrderRequestDTO;
 import com.progra3.cafeteria_api.model.dto.OrderResponseDTO;
 import com.progra3.cafeteria_api.model.entity.Item;
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-30T15:57:00-0300",
+    date = "2025-12-06T02:02:26-0300",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 25.0.1 (Oracle Corporation)"
 )
 @Component
@@ -55,8 +56,9 @@ public class OrderMapperImpl implements OrderMapper {
         String customerName = order.getCustomer() != null ? order.getCustomer().getName() : null;
         String employeeName = order.getEmployee() != null ? order.getEmployee().getName() : null;
         Integer seatingNumber = order.getSeating() != null ? order.getSeating().getNumber() : null;
+        List<OrderPaymentMethodResponseDTO> paymentMethods = mapPaymentMethods(order.getOrderPaymentMethods());
 
-        OrderResponseDTO orderResponseDTO = new OrderResponseDTO( id, employeeName, customerName, seatingNumber, orderType, items, dateTime, peopleCount, discount, status, subtotal, total );
+        OrderResponseDTO orderResponseDTO = new OrderResponseDTO( id, employeeName, customerName, seatingNumber, orderType, items, dateTime, peopleCount, discount, status, subtotal, total, paymentMethods );
 
         return orderResponseDTO;
     }

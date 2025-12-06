@@ -106,6 +106,17 @@
 			<version>9.4.0</version>
 			<type>pom</type>
 		</dependency>
+		<!-- BouncyCastle for AFIP PKCS#7 signing -->
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk18on</artifactId>
+			<version>1.83</version>
+		</dependency>
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcpkix-jdk18on</artifactId>
+			<version>1.83</version>
+		</dependency>
 	</dependencies>
 
 	<build>
