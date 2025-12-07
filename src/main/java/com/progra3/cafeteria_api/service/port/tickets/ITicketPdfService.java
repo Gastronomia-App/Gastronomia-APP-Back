@@ -1,4 +1,4 @@
-package com.progra3.cafeteria_api.service.port;
+package com.progra3.cafeteria_api.service.port.tickets;
 
 import com.progra3.cafeteria_api.model.dto.ticket.Ticket;
 

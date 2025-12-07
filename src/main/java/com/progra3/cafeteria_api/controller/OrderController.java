@@ -1,13 +1,12 @@
 package com.progra3.cafeteria_api.controller;
 
 import com.progra3.cafeteria_api.model.dto.*;
-import com.progra3.cafeteria_api.model.dto.ticket.FiscalTicketRequestDTO;
-import com.progra3.cafeteria_api.model.enums.InvoiceType;
+import com.progra3.cafeteria_api.model.dto.ticket.FiscalTicketRequest;
 import com.progra3.cafeteria_api.model.enums.OrderStatus;
 import com.progra3.cafeteria_api.model.enums.OrderType;
 import com.progra3.cafeteria_api.service.helper.SortUtils;
 import com.progra3.cafeteria_api.service.port.IOrderService;
-import com.progra3.cafeteria_api.service.port.ITicketService;
+import com.progra3.cafeteria_api.service.port.tickets.ITicketService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -317,6 +316,56 @@ public class OrderController {
     }
 
     @Operation(
+            summary = "Generate kitchen ticket (comanda) for an order",
+            description = "Generates a PDF kitchen ticket with the specified items for kitchen staff to prepare."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Kitchen ticket generated successfully",
+                    content = @Content(mediaType = "application/pdf")),
+            @ApiResponse(responseCode = "404", description = "Order not found", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Failed to generate kitchen ticket", content = @Content)
+    })
+    @PreAuthorize("hasAnyRole('CASHIER', 'WAITER', 'OWNER', 'ADMIN')")
+    @PostMapping(value = "/{id}/tickets/kitchen", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> generateKitchenTicket(
+            @Parameter(description = "ID of the order to generate kitchen ticket for")
+            @PathVariable @NotNull Long id,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "List of items to include in the kitchen ticket",
+                    required = true,
+                    content = @Content(
+                            schema = @Schema(implementation = ItemRequestDTO.class),
+                            examples = @ExampleObject(value = """
+                                    [
+                                      {
+                                        "productName": "Hamburguesa Completa",
+                                        "quantity": 2,
+                                        "comment": "Sin cebolla",
+                                        "options": ["Extra queso", "Sin tomate"]
+                                      },
+                                      {
+                                        "productName": "Papas Fritas",
+                                        "quantity": 1,
+                                        "comment": "",
+                                        "options": []
+                                      }
+                                    ]
+                                    """)
+                    )
+            )
+            @RequestBody @Valid List<Long> itemIds) {
+
+        byte[] pdf = ticketService.generateKitchenTicket(id, itemIds);
+
+        return ResponseEntity
+                .ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=comanda_orden_" + id + ".pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .contentLength(pdf.length)
+                .body(pdf);
+    }
+
+    @Operation(
             summary = "Generate pre-ticket for an order",
             description = "Generates a PDF pre-ticket (cuenta) for the customer showing items and totals, without payment details or CAE."
     )
@@ -359,9 +408,9 @@ public class OrderController {
             @Parameter(description = "ID of the order to generate fiscal ticket for")
             @PathVariable @NotNull Long id,
             @Parameter(description = "Fiscal ticket request data", required = true)
-            @RequestBody @Valid FiscalTicketRequestDTO fiscalTicketRequestDTO) {
+            @RequestBody @Valid FiscalTicketRequest fiscalTicketRequest) {
 
-        byte[] pdf = ticketService.generateFiscalTicket(id, fiscalTicketRequestDTO);
+        byte[] pdf = ticketService.generateFiscalTicket(id, fiscalTicketRequest);
 
         return ResponseEntity
                 .ok()

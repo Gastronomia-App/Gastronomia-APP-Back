@@ -4,7 +4,7 @@ import com.progra3.cafeteria_api.model.enums.DocumentType;
 import com.progra3.cafeteria_api.model.enums.InvoiceType;
 import com.progra3.cafeteria_api.model.enums.IvaCondition;
 
-public record FiscalTicketRequestDTO(
+public record FiscalTicketRequest(
         InvoiceType invoiceType,
         IvaCondition ivaCondition,
         DocumentType documentType,

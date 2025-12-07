@@ -10,38 +10,12 @@ import java.util.List;
 @Builder
 public record TicketItem(
 
-        /**
-         * Quantity of the product.
-         */
         Integer quantity,
-
-        /**
-         * Product name to display.
-         */
         String productName,
-
-        /**
-         * Unit price of the product.
-         * Used in BILL and PAYMENT tickets. Can be null for KITCHEN.
-         */
         Double unitPrice,
-
-        /**
-         * Line total (quantity * unitPrice).
-         * Used in BILL and PAYMENT tickets. Can be null for KITCHEN.
-         */
         Double lineTotal,
-
-        /**
-         * Optional option groups for this item (e.g. "Cafe", "Cookies").
-         * Mainly used for KITCHEN tickets.
-         */
+        Double taxPercent,
         List<TicketOptionGroup> optionGroups,
-
-        /**
-         * Optional comment associated with this item.
-         * If not null/blank, it will be rendered below the item line.
-         */
         String comment
 ) {
 }

@@ -2,11 +2,11 @@ com\progra3\cafeteria_api\afip\wsfe\WsfeClient.class
 com\progra3\cafeteria_api\config\WebSocketConfig.class
 com\progra3\cafeteria_api\model\dto\CustomerUpdateDTO.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECAEASinMovConsResponse.class
-com\progra3\cafeteria_api\service\impl\TicketBuilderService.class
 com\progra3\cafeteria_api\afip\wsfe\generated\ArrayOfOpcionalTipo.class
 com\progra3\cafeteria_api\model\entity\Product$ProductBuilder.class
 com\progra3\cafeteria_api\afip\wsfe\generated\ActividadesTipo.class
 com\progra3\cafeteria_api\model\dto\OrderSplitRequestDTO.class
+com\progra3\cafeteria_api\model\dto\ticket\TicketContext$TicketContextBuilder.class
 com\progra3\cafeteria_api\afip\wsfe\generated\Tributo.class
 com\progra3\cafeteria_api\model\entity\PaymentMethod.class
 com\progra3\cafeteria_api\afip\wsfe\generated\ArrayOfActividad.class
@@ -32,6 +32,7 @@ com\progra3\cafeteria_api\model\dto\NotificationResponseDTO.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FEParamGetTiposConceptoResponse.class
 com\progra3\cafeteria_api\model\dto\ticket\TicketItem.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FEParamGetTiposDocResponse.class
+com\progra3\cafeteria_api\service\impl\tickets\TicketPdfService$1.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FEParamGetTiposIvaResponse.class
 com\progra3\cafeteria_api\event\StockOutEvent.class
 com\progra3\cafeteria_api\repository\SupplierRepository.class
@@ -51,7 +52,6 @@ com\progra3\cafeteria_api\afip\wsfe\generated\MonedaResponse.class
 com\progra3\cafeteria_api\exception\user\EmployeeCannotBeDeletedException.class
 com\progra3\cafeteria_api\service\port\ISeatingService.class
 com\progra3\cafeteria_api\repository\ProductGroupRepository.class
-com\progra3\cafeteria_api\service\port\ITicketService.class
 com\progra3\cafeteria_api\afip\wsfe\generated\AlicIva.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECabResponse.class
 com\progra3\cafeteria_api\exception\user\OwnerCannotBeDeletedException.class
@@ -64,7 +64,9 @@ com\progra3\cafeteria_api\exception\product\CategoryCannotBeDeletedException.cla
 com\progra3\cafeteria_api\model\dto\SupplierResponseDTO$SupplierResponseDTOBuilder.class
 com\progra3\cafeteria_api\service\impl\EmployeeService.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECAEACabRequest.class
+com\progra3\cafeteria_api\service\impl\tickets\FiscalTicketBuilder.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FEDummyResponse.class
+com\progra3\cafeteria_api\service\impl\tickets\TicketBuilderFactory$1.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FEParamGetCondicionIvaReceptorResponse.class
 com\progra3\cafeteria_api\model\dto\LoginRequestDTO.class
 com\progra3\cafeteria_api\model\dto\AuditResponseDTO$AuditResponseDTOBuilder.class
@@ -110,6 +112,7 @@ com\progra3\cafeteria_api\model\entity\Business$BusinessBuilder.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECAERequest.class
 com\progra3\cafeteria_api\repository\CategoryRepository.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECAEAResponse.class
+com\progra3\cafeteria_api\service\impl\tickets\TicketBuilderService.class
 com\progra3\cafeteria_api\service\impl\ProductService.class
 com\progra3\cafeteria_api\afip\wsfe\generated\ArrayOfAlicIva.class
 com\progra3\cafeteria_api\model\dto\SeatingRequestDTO.class
@@ -132,11 +135,12 @@ com\progra3\cafeteria_api\validation\ValidItemRequestValidator$1.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FEParamGetTiposConcepto.class
 com\progra3\cafeteria_api\model\mapper\OrderMapperImpl.class
 com\progra3\cafeteria_api\afip\wsass\WsassClient.class
+com\progra3\cafeteria_api\model\enums\DocumentType.class
 com\progra3\cafeteria_api\model\dto\ticket\Ticket$TicketBuilder.class
 com\progra3\cafeteria_api\afip\wsfe\WsfeConfig.class
+com\progra3\cafeteria_api\service\port\tickets\ITicketBuilderService.class
 com\progra3\cafeteria_api\model\dto\ProductGroupResponseDTO.class
 com\progra3\cafeteria_api\exception\order\OrderNotFoundException.class
-com\progra3\cafeteria_api\service\impl\TicketPdfService$1.class
 com\progra3\cafeteria_api\afip\wsfe\generated\ArrayOfMoneda.class
 com\progra3\cafeteria_api\afip\wsfe\generated\OpcionalTipoResponse.class
 com\progra3\cafeteria_api\validation\ValidItemRequestValidator$SelectionAggregator.class
@@ -180,6 +184,7 @@ com\progra3\cafeteria_api\exception\product\ProductGroupNotFoundException.class
 com\progra3\cafeteria_api\repository\ProductOptionRepository.class
 com\progra3\cafeteria_api\service\impl\CategoryService.class
 com\progra3\cafeteria_api\exception\paymentmethod\DuplicatePaymentMethodException.class
+com\progra3\cafeteria_api\service\port\tickets\ITicketService.class
 com\progra3\cafeteria_api\model\entity\Employee.class
 com\progra3\cafeteria_api\model\entity\OrderPaymentMethod.class
 com\progra3\cafeteria_api\service\port\ISupplierService.class
@@ -217,6 +222,7 @@ com\progra3\cafeteria_api\model\mapper\CustomerMapper.class
 com\progra3\cafeteria_api\model\dto\PaymentMethodRequestDTO.class
 com\progra3\cafeteria_api\repository\CustomerRepository.class
 com\progra3\cafeteria_api\model\dto\ticket\TicketOptionLine.class
+com\progra3\cafeteria_api\service\impl\tickets\TicketService.class
 com\progra3\cafeteria_api\afip\wsfe\generated\ArrayOfFECAEADetRequest.class
 com\progra3\cafeteria_api\model\mapper\CategoryMapper.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FEParamGetCondicionIvaReceptor.class
@@ -236,15 +242,15 @@ com\progra3\cafeteria_api\model\mapper\OrderMapper.class
 com\progra3\cafeteria_api\model\entity\PaymentMethod$PaymentMethodBuilder.class
 com\progra3\cafeteria_api\event\AuditFinalizedEvent.class
 com\progra3\cafeteria_api\model\enums\CompositionType.class
+com\progra3\cafeteria_api\model\dto\ticket\TicketContext.class
 com\progra3\cafeteria_api\model\entity\Employee$EmployeeBuilderImpl.class
-com\progra3\cafeteria_api\service\impl\TicketPdfService.class
 com\progra3\cafeteria_api\exception\user\EmployeeAlreadyActiveException.class
 com\progra3\cafeteria_api\exception\user\OwnerAlreadyExistsException.class
 com\progra3\cafeteria_api\service\port\ICategoryService.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECAEASinMovimientoConsultar.class
 com\progra3\cafeteria_api\model\dto\AddressRequestDTO.class
-com\progra3\cafeteria_api\service\port\ITicketBuilderService.class
 com\progra3\cafeteria_api\afip\wsfe\generated\Actividad.class
+com\progra3\cafeteria_api\service\impl\tickets\TicketBuilderFactory.class
 com\progra3\cafeteria_api\validation\ValidItemRequestValidator.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECAEASinMovimientoInformar.class
 com\progra3\cafeteria_api\afip\wsfe\generated\PaisTipo.class
@@ -288,6 +294,7 @@ com\progra3\cafeteria_api\model\dto\OrderResponseDTO.class
 com\progra3\cafeteria_api\controller\SeatingController.class
 com\progra3\cafeteria_api\afip\wsfe\generated\ArrayOfComprador.class
 com\progra3\cafeteria_api\afip\wsfe\generated\ArrayOfObs.class
+com\progra3\cafeteria_api\service\impl\tickets\TicketService$1.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECAEAGet.class
 com\progra3\cafeteria_api\exception\product\ProductOptionNotFoundException.class
 com\progra3\cafeteria_api\validation\ValidOrderRequestValidator.class
@@ -321,7 +328,6 @@ com\progra3\cafeteria_api\afip\wsfe\generated\FEParamGetTiposCbte.class
 com\progra3\cafeteria_api\model\dto\ItemResponseDTO$ItemResponseDTOBuilder.class
 com\progra3\cafeteria_api\afip\wsfe\generated\CbteTipo.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FEDummy.class
-com\progra3\cafeteria_api\listener\KitchenTicketListener.class
 com\progra3\cafeteria_api\service\impl\PaymentMethodService.class
 com\progra3\cafeteria_api\model\dto\ExpenseRequestDTO.class
 com\progra3\cafeteria_api\exception\customer\CustomerPhoneNumberAlreadyExistsException.class
@@ -338,6 +344,7 @@ com\progra3\cafeteria_api\config\SecurityConfig.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FEPaisResponse.class
 com\progra3\cafeteria_api\exception\product\ProductGroupNameAlreadyExistsException.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FEParamGetTiposMonedasResponse.class
+com\progra3\cafeteria_api\service\impl\tickets\PreTicketBuilder.class
 com\progra3\cafeteria_api\model\mapper\ProductComponentMapperImpl.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECAEAConsultarResponse.class
 com\progra3\cafeteria_api\model\mapper\SelectedOptionMapper.class
@@ -354,6 +361,7 @@ com\progra3\cafeteria_api\model\dto\PaymentMethodUpdateDTO.class
 com\progra3\cafeteria_api\model\mapper\AuditMapper.class
 com\progra3\cafeteria_api\afip\wsfe\generated\Evt.class
 com\progra3\cafeteria_api\model\entity\Category$CategoryBuilder.class
+com\progra3\cafeteria_api\service\impl\tickets\TicketBuilderHelper.class
 com\progra3\cafeteria_api\exception\product\CategoryNameAlreadyExistsException.class
 com\progra3\cafeteria_api\model\dto\CustomerRequestDTO.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FEParamGetTiposMonedas.class
@@ -368,6 +376,7 @@ com\progra3\cafeteria_api\model\dto\ProductOptionRequestDTO.class
 com\progra3\cafeteria_api\repository\AuditRepository.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECAESolicitarResponse.class
 com\progra3\cafeteria_api\model\dto\ProductGroupRequestDTO.class
+com\progra3\cafeteria_api\model\enums\IvaCondition.class
 com\progra3\cafeteria_api\model\entity\Customer$CustomerBuilder.class
 com\progra3\cafeteria_api\model\dto\CategoryResponseDTO$CategoryResponseDTOBuilder.class
 com\progra3\cafeteria_api\afip\wsfe\generated\ArrayOfFECAEASinMov.class
@@ -383,7 +392,7 @@ com\progra3\cafeteria_api\afip\wsfe\generated\FECAEResponse.class
 com\progra3\cafeteria_api\exception\user\EmployeeNotFoundException.class
 com\progra3\cafeteria_api\exception\user\PhoneNumberAlreadyExistsException.class
 com\progra3\cafeteria_api\exception\paymentmethod\PaymentMethodNameAlreadyExistsException.class
-com\progra3\cafeteria_api\service\impl\TicketBuilderService$1.class
+com\progra3\cafeteria_api\service\impl\tickets\TicketPdfService.class
 com\progra3\cafeteria_api\model\entity\ProductGroup.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FEActividadesResponse.class
 com\progra3\cafeteria_api\model\dto\OrderResponseDTO$OrderResponseDTOBuilder.class
@@ -394,9 +403,9 @@ com\progra3\cafeteria_api\model\enums\InvoiceType.class
 com\progra3\cafeteria_api\model\mapper\SupplierMapperImpl.class
 com\progra3\cafeteria_api\exception\customer\CustomerDniAlreadyExistsException.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECAEARegInformativoResponse.class
-com\progra3\cafeteria_api\service\impl\TicketService$1.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECAEASolicitarResponse.class
 com\progra3\cafeteria_api\model\dto\SeatingRequestDTO$SeatingRequestDTOBuilder.class
+com\progra3\cafeteria_api\service\port\tickets\TicketBuilderStrategy.class
 com\progra3\cafeteria_api\model\dto\EmployeeResponseDTO.class
 com\progra3\cafeteria_api\model\mapper\SeatingMapperImpl.class
 com\progra3\cafeteria_api\afip\wsfe\generated\package-info.class
@@ -416,7 +425,6 @@ com\progra3\cafeteria_api\repository\SeatingRepository.class
 com\progra3\cafeteria_api\exception\product\ProductGroupCannotBeDeletedException.class
 com\progra3\cafeteria_api\controller\EmployeeController.class
 com\progra3\cafeteria_api\model\mapper\ProductMapper.class
-com\progra3\cafeteria_api\service\port\ITicketPdfService.class
 com\progra3\cafeteria_api\validation\ValidOrderRequest.class
 com\progra3\cafeteria_api\model\enums\NotificationType.class
 com\progra3\cafeteria_api\afip\wsfe\generated\ArrayOfFECAEDetResponse.class
@@ -432,6 +440,7 @@ com\progra3\cafeteria_api\afip\wsfe\generated\FECAEASinMovimientoInformarRespons
 com\progra3\cafeteria_api\listener\OrderEventListener.class
 com\progra3\cafeteria_api\model\entity\Item.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECAEAGetResponse.class
+com\progra3\cafeteria_api\service\port\tickets\ITicketPdfService.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECompConsResponse.class
 com\progra3\cafeteria_api\model\entity\Product.class
 com\progra3\cafeteria_api\model\enums\SeatingSize.class
@@ -451,14 +460,16 @@ com\progra3\cafeteria_api\model\mapper\ExpenseMapperImpl.class
 com\progra3\cafeteria_api\model\entity\Customer$CustomerBuilderImpl.class
 com\progra3\cafeteria_api\model\dto\CategoryRequestDTO.class
 com\progra3\cafeteria_api\validation\ValidBusinessRequest.class
+com\progra3\cafeteria_api\config\JacksonConfig.class
 com\progra3\cafeteria_api\event\ExpenseCreatedEvent.class
 com\progra3\cafeteria_api\model\dto\AddressResponseDTO.class
 com\progra3\cafeteria_api\exception\user\EmployeeDeletedException.class
 com\progra3\cafeteria_api\model\dto\OrderPaymentMethodDTO.class
+com\progra3\cafeteria_api\model\dto\ticket\FiscalTicketRequest.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FEDetResponse.class
 com\progra3\cafeteria_api\model\dto\ticket\TicketItem$TicketItemBuilder.class
-com\progra3\cafeteria_api\service\impl\TicketService.class
 com\progra3\cafeteria_api\model\dto\SupplierUpdateDTO.class
+com\progra3\cafeteria_api\service\impl\tickets\KitchenTicketBuilder.class
 com\progra3\cafeteria_api\security\JwtAuthenticationFilter.class
 com\progra3\cafeteria_api\model\dto\SeatingPositionRequestDTO.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECompTotXRequestResponse.class

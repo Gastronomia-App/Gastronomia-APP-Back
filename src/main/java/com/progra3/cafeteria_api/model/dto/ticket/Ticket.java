@@ -16,15 +16,8 @@ public record Ticket(
 
         TicketHeader header,
 
-        /**
-         * List of items to be printed in the body section of the ticket.
-         */
         List<TicketItem> items,
 
-        /**
-         * Totals information.
-         * Can be null for tickets that do not show totals (e.g. KITCHEN).
-         */
         TicketTotals totals
 ) {
 }

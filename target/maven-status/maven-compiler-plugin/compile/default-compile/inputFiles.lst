@@ -8,6 +8,7 @@ E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\c
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\afip\wsfe\WsfeConfig.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\CafeteriaApiApplication.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\config\AfipConfig.java
+E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\config\JacksonConfig.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\config\SecurityConfig.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\config\TimeConfig.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\config\WebSocketConfig.java
@@ -93,7 +94,6 @@ E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\c
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\exception\user\UsernameAlreadyExistsException.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\exception\utilities\InvalidDateException.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\listener\ExpenseEventListener.java
-E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\listener\KitchenTicketListener.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\listener\NotificationEventListener.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\listener\OrderEventListener.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\dto\AddressRequestDTO.java
@@ -147,7 +147,9 @@ E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\c
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\dto\SupplierRequestDTO.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\dto\SupplierResponseDTO.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\dto\SupplierUpdateDTO.java
+E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\dto\ticket\FiscalTicketRequest.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\dto\ticket\Ticket.java
+E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\dto\ticket\TicketContext.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\dto\ticket\TicketHeader.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\dto\ticket\TicketItem.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\dto\ticket\TicketOptionGroup.java
@@ -174,7 +176,9 @@ E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\c
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\entity\Supplier.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\enums\AuditStatus.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\enums\CompositionType.java
+E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\enums\DocumentType.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\enums\InvoiceType.java
+E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\enums\IvaCondition.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\enums\NotificationType.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\enums\OrderStatus.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\model\enums\OrderType.java
@@ -239,9 +243,14 @@ E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\c
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\impl\SeatingService.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\impl\StockService.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\impl\SupplierService.java
-E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\impl\TicketBuilderService.java
-E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\impl\TicketPdfService.java
-E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\impl\TicketService.java
+E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\impl\tickets\FiscalTicketBuilder.java
+E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\impl\tickets\KitchenTicketBuilder.java
+E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\impl\tickets\PreTicketBuilder.java
+E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\impl\tickets\TicketBuilderFactory.java
+E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\impl\tickets\TicketBuilderHelper.java
+E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\impl\tickets\TicketBuilderService.java
+E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\impl\tickets\TicketPdfService.java
+E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\impl\tickets\TicketService.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\port\IAuditService.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\port\IAuthenticationService.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\port\IBusinessService.java
@@ -258,9 +267,10 @@ E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\c
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\port\ISeatingService.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\port\IStockService.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\port\ISupplierService.java
-E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\port\ITicketBuilderService.java
-E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\port\ITicketPdfService.java
-E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\port\ITicketService.java
+E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\port\tickets\ITicketBuilderService.java
+E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\port\tickets\ITicketPdfService.java
+E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\port\tickets\ITicketService.java
+E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\service\port\tickets\TicketBuilderStrategy.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\validation\ValidBusinessRequest.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\validation\ValidBusinessRequestValidator.java
 E:\Programacion\Gastronomia_App\Gastronomia-App-Back\src\main\java\com\progra3\cafeteria_api\validation\ValidItemRequest.java

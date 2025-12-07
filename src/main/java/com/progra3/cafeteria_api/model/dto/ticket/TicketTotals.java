@@ -2,6 +2,8 @@ package com.progra3.cafeteria_api.model.dto.ticket;
 
 import lombok.Builder;
 
+import java.time.LocalDate;
+
 /**
  * TicketTotals contains subtotal, discount and total information.
  */
@@ -38,6 +40,18 @@ public record TicketTotals(
      * CAE (Código de Autorización Electrónico) from AFIP.
      * Only present for fiscal/electronic invoices.
      */
-    String cae
+    String cae,
+
+    /**
+     * CAE expiration date from AFIP.
+     * Only present for fiscal/electronic invoices.
+     */
+    LocalDate caeExpiration,
+
+    /**
+     * Base64-encoded QR data for AFIP fiscal ticket.
+     * Contains JSON with invoice details per AFIP specifications.
+     */
+    String qrData
 ) {
 }

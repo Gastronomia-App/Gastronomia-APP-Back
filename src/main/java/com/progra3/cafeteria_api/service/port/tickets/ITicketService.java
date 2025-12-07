@@ -1,10 +1,7 @@
-package com.progra3.cafeteria_api.service.port;
+package com.progra3.cafeteria_api.service.port.tickets;
 
-import com.progra3.cafeteria_api.model.dto.ItemRequestDTO;
-import com.progra3.cafeteria_api.model.dto.ticket.FiscalTicketRequestDTO;
-import com.progra3.cafeteria_api.model.entity.Item;
+import com.progra3.cafeteria_api.model.dto.ticket.FiscalTicketRequest;
 import com.progra3.cafeteria_api.model.entity.Order;
-import com.progra3.cafeteria_api.model.enums.InvoiceType;
 
 import java.util.List;
 
@@ -29,16 +26,16 @@ public interface ITicketService {
      * @param order The order to generate fiscal ticket for
      * @return PDF byte array of the fiscal ticket
      */
-    byte[] generateFiscalTicket(Long orderId, FiscalTicketRequestDTO fiscalTicketRequestDTO);
+    byte[] generateFiscalTicket(Long orderId, FiscalTicketRequest fiscalTicketRequest);
 
     /**
      * Generates a kitchen ticket (comanda) for the specified items in an order.
      * This ticket is used by kitchen staff to prepare the ordered items.
      *
-     * @param order The order containing the items
-     * @param items The specific items to include in the kitchen ticket
+     * @param orderId The order containing the items
+     * @param itemIds The specific item Ids to include in the kitchen ticket
      * @return PDF byte array of the kitchen ticket
      */
-    byte[] generateKitchenTicket(Order order, List<Item> items);
+    byte[] generateKitchenTicket(Long orderId, List<Long> itemIds);
 }
 

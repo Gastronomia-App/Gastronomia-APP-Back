@@ -1,9 +1,16 @@
-package com.progra3.cafeteria_api.service.impl;
+package com.progra3.cafeteria_api.service.impl.tickets;
 
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 import com.itextpdf.io.font.FontProgram;
 import com.itextpdf.io.font.FontProgramFactory;
 import com.itextpdf.io.font.PdfEncodings;
 import com.itextpdf.io.font.constants.StandardFonts;
+import com.itextpdf.io.image.ImageData;
+import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.PageSize;
@@ -13,9 +20,11 @@ import com.itextpdf.kernel.pdf.canvas.draw.DashedLine;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.borders.Border;
 import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Image;
 import com.itextpdf.layout.element.LineSeparator;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.properties.HorizontalAlignment;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
 import com.progra3.cafeteria_api.model.enums.TicketType;
@@ -25,8 +34,9 @@ import com.progra3.cafeteria_api.model.dto.ticket.TicketItem;
 import com.progra3.cafeteria_api.model.dto.ticket.TicketOptionGroup;
 import com.progra3.cafeteria_api.model.dto.ticket.TicketOptionLine;
 import com.progra3.cafeteria_api.model.dto.ticket.TicketTotals;
-import com.progra3.cafeteria_api.service.port.ITicketPdfService;
+import com.progra3.cafeteria_api.service.port.tickets.ITicketPdfService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -41,6 +51,7 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TicketPdfService implements ITicketPdfService {
 
     // Thermal width (~80mm)
@@ -57,8 +68,14 @@ public class TicketPdfService implements ITicketPdfService {
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
+    private static final DateTimeFormatter DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
     // Monospace font resource (src/main/resources/fonts/DejaVuSansMono.ttf)
     private static final String MONO_FONT_RESOURCE = "/fonts/DejaVuSansMono.ttf";
+
+    // QR code size for fiscal ticket
+    private static final int QR_SIZE = 150;
 
     // Box-drawing characters
     private static final String VERTICAL = "│";
@@ -121,6 +138,11 @@ public class TicketPdfService implements ITicketPdfService {
                 + itemsCount * ITEM_BLOCK_HEIGHT
                 + optionLines * OPTION_LINE_HEIGHT;
 
+        // Add extra height for fiscal tickets (QR code, CAE, fiscal header info)
+        if (ticket.type() == TicketType.FISCAL_TICKET) {
+            estimated += 180f; // QR (~150) + CAE info + extra header lines
+        }
+
         if (estimated < MIN_TICKET_HEIGHT) {
             estimated = MIN_TICKET_HEIGHT;
         }
@@ -172,33 +194,150 @@ public class TicketPdfService implements ITicketPdfService {
 
         // Minimal header for kitchen tickets: mesa, fecha/hora y mozo
         if (type == TicketType.KITCHEN_TICKET) {
-            Table infoTable = new Table(UnitValue.createPercentArray(new float[]{1, 1}));
-            infoTable.setWidth(UnitValue.createPercentValue(100));
-
-            String mesaVal = header.seatingNumber() != null
-                    ? header.seatingNumber().toString()
-                    : "-";
-            infoTable.addCell(createCell("Mesa: " + mesaVal, TextAlignment.LEFT, fontBold));
-
-            String fechaVal = header.dateTime() != null
-                    ? header.dateTime().format(DATE_TIME_FORMATTER)
-                    : "-";
-            infoTable.addCell(
-                    createCell(fechaVal, TextAlignment.RIGHT, fontBold)
-                            .setFontSize(8f)
-            );
-
-            doc.add(infoTable);
-
-            if (header.employeeName() != null) {
-                doc.add(new Paragraph("Mozo/a: " + header.employeeName()).setMarginTop(2f));
-            }
-
-            doc.add(new Paragraph(""));
+            addKitchenHeader(doc, header, fontBold);
             return;
         }
 
-        // Full header for BILL / PAYMENT
+        // Fiscal ticket with AFIP-compliant header
+        if (type == TicketType.FISCAL_TICKET) {
+            addFiscalHeader(doc, header, fontBold);
+            return;
+        }
+
+        // Default header for PRE_TICKET
+        addDefaultHeader(doc, header, type, fontBold);
+    }
+
+    private void addKitchenHeader(Document doc, TicketHeader header, PdfFont fontBold) {
+        Table infoTable = new Table(UnitValue.createPercentArray(new float[]{1, 1}));
+        infoTable.setWidth(UnitValue.createPercentValue(100));
+
+        String mesaVal = header.seatingNumber() != null
+                ? header.seatingNumber().toString()
+                : "-";
+        infoTable.addCell(createCell("Mesa: " + mesaVal, TextAlignment.LEFT, fontBold));
+
+        String fechaVal = header.dateTime() != null
+                ? header.dateTime().format(DATE_TIME_FORMATTER)
+                : "-";
+        infoTable.addCell(
+                createCell(fechaVal, TextAlignment.RIGHT, fontBold)
+                        .setFontSize(8f)
+        );
+
+        doc.add(infoTable);
+
+        if (header.employeeName() != null) {
+            doc.add(new Paragraph("Mozo/a: " + header.employeeName()).setMarginTop(2f));
+        }
+
+        doc.add(new Paragraph(""));
+    }
+
+    private void addFiscalHeader(Document doc, TicketHeader header, PdfFont fontBold) {
+        // Business name
+        if (header.businessName() != null) {
+            doc.add(new Paragraph("Razón social: " + header.businessName())
+                    .setFontSize(9f)
+                    .setMarginBottom(0f));
+        }
+
+        // Business address
+        if (header.businessAddress() != null) {
+            doc.add(new Paragraph("Dirección: " + header.businessAddress())
+                    .setFontSize(9f)
+                    .setMarginBottom(0f));
+        }
+
+        // Business CUIT
+        if (header.businessCuit() != null) {
+            doc.add(new Paragraph("C.U.I.T.: " + formatCuit(header.businessCuit()))
+                    .setFontSize(9f)
+                    .setMarginBottom(0f));
+        }
+
+        // IVA condition
+        if (header.businessIvaCondition() != null) {
+            doc.add(new Paragraph(header.businessIvaCondition())
+                    .setFontSize(9f)
+                    .setMarginBottom(0f));
+        }
+
+        // IIBB (Ingresos Brutos)
+        if (header.businessIibb() != null) {
+            doc.add(new Paragraph("IIBB: " + header.businessIibb())
+                    .setFontSize(9f)
+                    .setMarginBottom(0f));
+        }
+
+        // Activity start date
+        if (header.businessActivityStart() != null) {
+            doc.add(new Paragraph("Inicio de actividad: " + header.businessActivityStart().format(DATE_FORMATTER))
+                    .setFontSize(9f)
+                    .setMarginBottom(0f));
+        }
+
+        addDashedSeparator(doc);
+
+        // Invoice type title (FACTURA A, FACTURA B, FACTURA C, etc.)
+        String invoiceTitle = header.title() != null ? header.title() : "FACTURA";
+        doc.add(new Paragraph(invoiceTitle)
+                .setFont(fontBold)
+                .setFontSize(16f)
+                .setTextAlignment(TextAlignment.CENTER)
+                .setMarginBottom(0f));
+
+        // Invoice code (Código)
+        if (header.invoiceCode() != null) {
+            doc.add(new Paragraph("Código " + String.format("%02d", header.invoiceCode()))
+                    .setFontSize(9f)
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setMarginBottom(2f));
+        }
+
+        addDashedSeparator(doc);
+
+        // Punto de Venta and Comprobante number
+        if (header.puntoVenta() != null) {
+            doc.add(new Paragraph("P.V: " + String.format("%05d", header.puntoVenta()))
+                    .setFontSize(9f)
+                    .setMarginBottom(0f));
+        }
+
+        if (header.cbteNumero() != null) {
+            doc.add(new Paragraph("Nro: " + String.format("%08d", header.cbteNumero()))
+                    .setFontSize(9f)
+                    .setMarginBottom(0f));
+        }
+
+        // Invoice date
+        if (header.dateTime() != null) {
+            doc.add(new Paragraph("Fecha: " + header.dateTime().format(DATE_FORMATTER))
+                    .setFontSize(9f)
+                    .setMarginBottom(0f));
+        }
+
+        // Concept
+        if (header.concept() != null) {
+            doc.add(new Paragraph("Concepto: " + header.concept())
+                    .setFontSize(9f)
+                    .setMarginBottom(0f));
+        }
+
+        addDashedSeparator(doc);
+
+        // Customer IVA condition
+        if (header.customerIvaCondition() != null) {
+            doc.add(new Paragraph("A " + header.customerIvaCondition())
+                    .setFontSize(9f)
+                    .setMarginBottom(0f));
+        }
+
+        doc.add(new Paragraph(""));
+    }
+
+    private void addDefaultHeader(Document doc, TicketHeader header, TicketType type, PdfFont fontBold) {
+        // Full header for PRE_TICKET
         if (header.businessName() != null) {
             Paragraph title = new Paragraph(header.businessName())
                     .setFont(fontBold)
@@ -218,11 +357,11 @@ public class TicketPdfService implements ITicketPdfService {
         if (header.title() != null && !header.title().isBlank()) {
             ticketTitle = header.title();
         } else {
-            switch (type) {
-                case PRE_TICKET -> ticketTitle = "DETALLE DE CONSUMO";
-                case FISCAL_TICKET -> ticketTitle = "FACTURA";
-                default -> ticketTitle = "TICKET";
-            }
+            ticketTitle = switch (type) {
+                case PRE_TICKET -> "DETALLE DE CONSUMO";
+                case FISCAL_TICKET -> "FACTURA";
+                default -> "TICKET";
+            };
         }
 
         if (!ticketTitle.isEmpty()) {
@@ -424,6 +563,67 @@ public class TicketPdfService implements ITicketPdfService {
         doc.add(totalTable);
 
         addDashedSeparator(doc);
+
+        // Fiscal ticket footer: CAE, expiration and QR code
+        if (ticket.type() == TicketType.FISCAL_TICKET) {
+            addFiscalFooter(doc, totals, fontBold);
+        }
+
+        // Pre-ticket warning
+        if (totals.printInvoiceWarning()) {
+            doc.add(new Paragraph("Este documento no es valido como factura.")
+                    .setFontSize(8f)
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setMarginTop(5f));
+        }
+    }
+
+    private void addFiscalFooter(Document doc, TicketTotals totals, PdfFont fontBold) {
+        // CAE
+        if (totals.cae() != null) {
+            doc.add(new Paragraph("CAE: " + totals.cae())
+                    .setFontSize(9f)
+                    .setMarginBottom(0f));
+        }
+
+        // CAE Expiration
+        if (totals.caeExpiration() != null) {
+            doc.add(new Paragraph("Vto: " + totals.caeExpiration().format(DATE_FORMATTER))
+                    .setFontSize(9f)
+                    .setMarginBottom(2f));
+        }
+
+        // QR Code
+        if (totals.qrData() != null) {
+            try {
+                byte[] qrBytes = generateQrCode(totals.qrData());
+                ImageData imageData = ImageDataFactory.create(qrBytes);
+                Image qrImage = new Image(imageData);
+                qrImage.setWidth(QR_SIZE);
+                qrImage.setHeight(QR_SIZE);
+                qrImage.setHorizontalAlignment(HorizontalAlignment.CENTER);
+                qrImage.setMarginTop(3f);
+                qrImage.setMarginBottom(5f);
+                doc.add(qrImage);
+            } catch (Exception e) {
+                log.error("Failed to generate QR code for fiscal ticket", e);
+                doc.add(new Paragraph("Error generando código QR")
+                        .setFontSize(8f)
+                        .setTextAlignment(TextAlignment.CENTER));
+            }
+        }
+    }
+
+    /**
+     * Generates a QR code image as PNG bytes.
+     */
+    private byte[] generateQrCode(String content) throws WriterException, IOException {
+        QRCodeWriter qrCodeWriter = new QRCodeWriter();
+        BitMatrix bitMatrix = qrCodeWriter.encode(content, BarcodeFormat.QR_CODE, QR_SIZE, QR_SIZE);
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        MatrixToImageWriter.writeToStream(bitMatrix, "PNG", outputStream);
+        return outputStream.toByteArray();
     }
 
     // ===========================
@@ -544,5 +744,19 @@ public class TicketPdfService implements ITicketPdfService {
 
             doc.add(p);
         }
+    }
+
+    /**
+     * Formats a CUIT number as XX-XXXXXXXX-X.
+     */
+    private String formatCuit(Long cuit) {
+        if (cuit == null) {
+            return "";
+        }
+        String cuitStr = String.valueOf(cuit);
+        if (cuitStr.length() == 11) {
+            return cuitStr.substring(0, 2) + "-" + cuitStr.substring(2, 10) + "-" + cuitStr.substring(10);
+        }
+        return cuitStr;
     }
 }
