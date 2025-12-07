@@ -3,6 +3,7 @@ package com.progra3.cafeteria_api.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,7 +24,13 @@ public class Business {
     private String name;
 
     @Column(nullable = false, unique = true)
-    private String cuit;
+    private Long cuit;
+
+    @Column(name = "iibb")
+    private String iibb;
+
+    @Column(name = "activity_start_date")
+    private LocalDate activityStartDate;
 
     @Embedded
     @Column(nullable = false)

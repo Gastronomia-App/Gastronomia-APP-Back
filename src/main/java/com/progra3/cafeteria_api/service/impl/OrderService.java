@@ -204,8 +204,9 @@ public class OrderService implements IOrderService {
 
         if (order.getSeating() != null) {
             order.getSeating().setActiveOrder(null);
-            eventPublisher.publishEvent(new OrderFinalizedEvent(order));
         }
+
+        eventPublisher.publishEvent(new OrderFinalizedEvent(order));
 
         return orderMapper.toDTO(orderRepository.save(order));
     }

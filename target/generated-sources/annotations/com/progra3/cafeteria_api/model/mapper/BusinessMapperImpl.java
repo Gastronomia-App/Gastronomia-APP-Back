@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-30T15:57:00-0300",
+    date = "2025-12-07T15:28:20-0300",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 25.0.1 (Oracle Corporation)"
 )
 @Component
@@ -31,7 +31,7 @@ public class BusinessMapperImpl implements BusinessMapper {
 
         Long id = null;
         String name = null;
-        String cuit = null;
+        Long cuit = null;
         AddressResponseDTO address = null;
         EmployeeResponseDTO owner = null;
 
@@ -76,7 +76,7 @@ public class BusinessMapperImpl implements BusinessMapper {
             business.setName( dto.name() );
         }
         if ( dto.cuit() != null ) {
-            business.setCuit( dto.cuit() );
+            business.setCuit( Long.parseLong( dto.cuit() ) );
         }
         if ( dto.address() != null ) {
             business.setAddress( addressMapper.toEntity( dto.address() ) );

@@ -1,3 +1,11 @@
+# Security & AFIP Credentials
+*.key
+*.csr
+*.crt
+*.p12
+*.jks
+*.pfx
+
 # Compiled class file
 *.class
 
