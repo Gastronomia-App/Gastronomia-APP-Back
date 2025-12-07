@@ -1,6 +1,8 @@
 package com.progra3.cafeteria_api.afip.wsfe;
 
 import com.progra3.cafeteria_api.afip.wsfe.generated.*;
+import com.progra3.cafeteria_api.model.dto.ticket.FiscalTicketRequestDTO;
+import com.progra3.cafeteria_api.model.enums.InvoiceType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,66 +27,30 @@ public class AfipInvoiceService {
     private Integer puntoVenta;
 
     /**
-     * Generates an electronic Invoice B (for monotributistas/consumidores finales).
-     *
-     * @param customerDocNumber Customer's document number (CUIT/DNI)
-     * @param totalAmount Total amount including VAT
-     * @param netAmount Net amount (taxable base)
-     * @param ivaAmount VAT amount
-     * @return AFIP response with CAE and authorization details
-     */
-    public FECAEResponse generateInvoiceB(
-            Long customerDocNumber,
-            BigDecimal totalAmount,
-            BigDecimal netAmount,
-            BigDecimal ivaAmount
-    ) {
-        return generateInvoice(6, customerDocNumber, totalAmount, netAmount, ivaAmount);
-    }
-
-    /**
-     * Generates an electronic Invoice C (for monotributistas).
-     *
-     * @param customerDocNumber Customer's document number
-     * @param totalAmount Total amount (no VAT discrimination)
-     * @return AFIP response with CAE and authorization details
-     */
-    public FECAEResponse generateInvoiceC(
-            Long customerDocNumber,
-            BigDecimal totalAmount
-    ) {
-        // Invoice C does not discriminate VAT
-        return generateInvoice(11, customerDocNumber, totalAmount, totalAmount, BigDecimal.ZERO);
-    }
-
-    /**
      * Generates an electronic invoice.
      *
-     * @param cbteTipo Voucher type (6=Invoice B, 11=Invoice C)
-     * @param customerDocNumber Customer's document number
-     * @param totalAmount Total amount
-     * @param netAmount Net amount (taxable base)
-     * @param ivaAmount VAT amount
+     * @param fiscalTicketRequestDTO Fiscal ticket request data
+     * @param totalAmount       Total amount
+     * @param netAmount         Net amount (taxable base)
+     * @param ivaAmount         IVA amount
      * @return AFIP response with CAE and authorization details
      */
-    private FECAEResponse generateInvoice(
-            Integer cbteTipo,
-            Long customerDocNumber,
+    public FECAEResponse generateInvoice(
+            FiscalTicketRequestDTO fiscalTicketRequestDTO,
             BigDecimal totalAmount,
             BigDecimal netAmount,
             BigDecimal ivaAmount
     ) {
         try {
             // Get last authorized voucher number
-            Long lastVoucher = getLastAuthorizedVoucher(puntoVenta, cbteTipo);
+            Long lastVoucher = getLastAuthorizedVoucher(puntoVenta, fiscalTicketRequestDTO.invoiceType().getInvoiceCode());
             Long nextVoucher = lastVoucher + 1;
 
-            log.info("Generating invoice type {} number {}", cbteTipo, nextVoucher);
+            log.info("Generating invoice type {} number {}", fiscalTicketRequestDTO.invoiceType(), nextVoucher);
 
             // Build request using JAXB2-generated classes
             FECAESolicitar request = buildInvoiceRequest(
-                    cbteTipo,
-                    customerDocNumber,
+                    fiscalTicketRequestDTO,
                     nextVoucher,
                     totalAmount,
                     netAmount,
@@ -99,7 +65,7 @@ public class AfipInvoiceService {
 
             if (result != null && result.getFeDetResp() != null
                     && !result.getFeDetResp().getFECAEDetResponse().isEmpty()) {
-                FECAEDetResponse detResp = result.getFeDetResp().getFECAEDetResponse().get(0);
+                FECAEDetResponse detResp = result.getFeDetResp().getFECAEDetResponse().getFirst();
                 if ("A".equals(detResp.getResultado())) {
                     log.info("Invoice authorized. CAE: {}, Expiration: {}",
                             detResp.getCAE(), detResp.getCAEFchVto());
@@ -139,19 +105,19 @@ public class AfipInvoiceService {
     /**
      * Gets the next available voucher number for a given voucher type.
      *
-     * @param cbteTipo Voucher type
+     * @param invoiceType Voucher type
      * @return Next voucher number
      */
-    public Long getNextVoucherNumber(Integer cbteTipo) {
-        Long last = getLastAuthorizedVoucher(puntoVenta, cbteTipo);
+    public Long getNextVoucherNumber(InvoiceType invoiceType) {
+        Long last = getLastAuthorizedVoucher(puntoVenta, invoiceType.getInvoiceCode());
         return last + 1;
     }
 
     /**
      * Gets the last authorized voucher number from AFIP.
      */
-    private Long getLastAuthorizedVoucher(Integer ptoVta, Integer cbteTipo) {
-        FECompUltimoAutorizadoResponse response = wsfeClient.getLastAuthorized(ptoVta, cbteTipo);
+    private Long getLastAuthorizedVoucher(Integer ptoVta, Integer invoiceTypeCode) {
+        FECompUltimoAutorizadoResponse response = wsfeClient.getLastAuthorized(ptoVta, invoiceTypeCode);
 
         if (response != null && response.getFECompUltimoAutorizadoResult() != null) {
             Integer cbteNro = response.getFECompUltimoAutorizadoResult().getCbteNro();
@@ -166,8 +132,7 @@ public class AfipInvoiceService {
      * Builds a complete FECAESolicitar request using JAXB2-generated classes.
      */
     private FECAESolicitar buildInvoiceRequest(
-            Integer cbteTipo,
-            Long customerDocNumber,
+            FiscalTicketRequestDTO fiscalTicketRequestDTO,
             Long voucherNumber,
             BigDecimal totalAmount,
             BigDecimal netAmount,
@@ -177,13 +142,27 @@ public class AfipInvoiceService {
         FECAECabRequest cabReq = new FECAECabRequest();
         cabReq.setCantReg(1);
         cabReq.setPtoVta(puntoVenta);
-        cabReq.setCbteTipo(cbteTipo);
+        cabReq.setCbteTipo(fiscalTicketRequestDTO.invoiceType().getInvoiceCode());
 
         // Build detail (FECAEDetRequest)
         FECAEDetRequest detReq = new FECAEDetRequest();
-        detReq.setConcepto(1); // 1=Products, 2=Services, 3=Both
-        detReq.setDocTipo(80); // 80=CUIT, 96=DNI
-        detReq.setDocNro(customerDocNumber);
+        detReq.setConcepto(1); // 1=Products
+        switch (fiscalTicketRequestDTO.invoiceType()) {
+            case FACTURA_A -> {
+                detReq.setDocTipo(80);
+                detReq.setDocNro(fiscalTicketRequestDTO.documentNumber() != null ? fiscalTicketRequestDTO.documentNumber() : 0L); // Should be CUIT (no lo voy a cambiar ahora perdon xd)
+            }
+            case FACTURA_B -> {
+                if (fiscalTicketRequestDTO.documentNumber() == null || fiscalTicketRequestDTO.documentNumber() == 0L) {
+                    detReq.setDocTipo(99);
+                    detReq.setDocNro(0L);
+                } else {
+                    detReq.setDocTipo(96); // 96 = DNI
+                    detReq.setDocNro(fiscalTicketRequestDTO.documentNumber());
+                }
+            }
+            default -> throw new IllegalArgumentException("Unsupported invoice type: " + fiscalTicketRequestDTO.invoiceType());
+        }
         detReq.setCbteDesde(voucherNumber);
         detReq.setCbteHasta(voucherNumber);
         detReq.setCbteFch(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")));
@@ -195,8 +174,9 @@ public class AfipInvoiceService {
         detReq.setImpIVA(ivaAmount.doubleValue());
         detReq.setMonId("PES"); // Argentine Pesos
         detReq.setMonCotiz(1.0); // Exchange rate
+        detReq.setCondicionIVAReceptorId(fiscalTicketRequestDTO.ivaCondition().getCode());
 
-        // Add VAT aliquots if needed (for Invoice B)
+        // Add IVA aliquots if needed
         if (ivaAmount.compareTo(BigDecimal.ZERO) > 0) {
             AlicIva alicIva = new AlicIva();
             alicIva.setId(5); // 5 = 21% VAT

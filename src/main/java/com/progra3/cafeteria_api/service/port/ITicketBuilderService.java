@@ -13,9 +13,14 @@ import java.util.List;
 public interface ITicketBuilderService {
 
     /**
-     * Builds a ticket using all items from the given order.
+     * Builds a pre-ticket using all items from the given order.
      */
-    Ticket buildTicket(Order order, TicketType type);
+    Ticket buildPreTicket(Order order);
+
+    /**
+     * Builds a fiscal ticket using all items from the given order.
+     */
+    Ticket buildFiscalTicket(Order order, String cae);
 
     /**
      * Builds a kitchen ticket for the given explicit list of items.
@@ -23,9 +28,4 @@ public interface ITicketBuilderService {
      */
     Ticket buildKitchenTicket(Order order, List<Item> items);
 
-    /**
-     * Builds a kitchen ticket only for the provided item IDs of the order.
-     * The service is responsible for resolving, filtering and excluding deleted items.
-     */
-    Ticket buildKitchenTicketForItems(Order order, List<Long> itemIds);
 }

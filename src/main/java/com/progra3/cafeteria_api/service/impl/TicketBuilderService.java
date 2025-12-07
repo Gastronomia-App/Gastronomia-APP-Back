@@ -1,21 +1,9 @@
 package com.progra3.cafeteria_api.service.impl;
 
-import com.progra3.cafeteria_api.model.entity.Business;
-import com.progra3.cafeteria_api.model.entity.Customer;
-import com.progra3.cafeteria_api.model.entity.Employee;
-import com.progra3.cafeteria_api.model.entity.Item;
-import com.progra3.cafeteria_api.model.entity.Order;
-import com.progra3.cafeteria_api.model.entity.Person;
-import com.progra3.cafeteria_api.model.entity.ProductOption;
-import com.progra3.cafeteria_api.model.entity.Seating;
-import com.progra3.cafeteria_api.model.entity.SelectedOption;
+import com.progra3.cafeteria_api.model.dto.ticket.*;
+import com.progra3.cafeteria_api.model.entity.*;
 import com.progra3.cafeteria_api.model.enums.TicketType;
-import com.progra3.cafeteria_api.model.dto.ticket.Ticket;
-import com.progra3.cafeteria_api.model.dto.ticket.TicketHeader;
-import com.progra3.cafeteria_api.model.dto.ticket.TicketItem;
-import com.progra3.cafeteria_api.model.dto.ticket.TicketOptionGroup;
-import com.progra3.cafeteria_api.model.dto.ticket.TicketOptionLine;
-import com.progra3.cafeteria_api.model.dto.ticket.TicketTotals;
+import com.progra3.cafeteria_api.security.EmployeeContext;
 import com.progra3.cafeteria_api.service.port.ITicketBuilderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,81 +12,62 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * TicketBuilderService converts Order entities into Ticket models
- * that can later be rendered as PDF tickets.
+ * Service for building Ticket DTOs from Order entities.
+ * Supports pre-tickets, fiscal tickets, and kitchen tickets.
  */
 @Service
 @RequiredArgsConstructor
 public class TicketBuilderService implements ITicketBuilderService {
 
+    private final EmployeeContext context;
+
+    // ===========================
+    // Public API
+    // ===========================
+
     @Override
-    public Ticket buildTicket(Order order, TicketType type) {
-        TicketHeader header = buildHeader(order, type);
-
-        List<TicketItem> items = switch (type) {
-            case KITCHEN -> buildKitchenItems(order.getItems());
-            case BILL, PAYMENT -> buildBillingItems(order);
-        };
-
-        TicketTotals totals = switch (type) {
-            case KITCHEN -> null;
-            case BILL, PAYMENT -> buildTotals(order);
-        };
-
+    public Ticket buildPreTicket(Order order) {
         return Ticket.builder()
-                .type(type)
-                .header(header)
-                .items(items)
-                .totals(totals)
+                .type(TicketType.PRE_TICKET)
+                .header(buildHeader(order, TicketType.PRE_TICKET, null))
+                .items(buildBillItems(order))
+                .totals(buildTotals(order, null))
+                .build();
+    }
+
+    @Override
+    public Ticket buildFiscalTicket(Order order, String cae) {
+        return Ticket.builder()
+                .type(TicketType.FISCAL_TICKET)
+                .header(buildHeader(order, TicketType.FISCAL_TICKET, cae))
+                .items(buildBillItems(order))
+                .totals(buildTotals(order, cae))
                 .build();
     }
 
     @Override
     public Ticket buildKitchenTicket(Order order, List<Item> items) {
-        TicketHeader header = buildHeader(order, TicketType.KITCHEN);
-        List<TicketItem> ticketItems = buildKitchenItems(items);
-
         return Ticket.builder()
-                .type(TicketType.KITCHEN)
-                .header(header)
-                .items(ticketItems)
+                .type(TicketType.KITCHEN_TICKET)
+                .header(buildHeader(order, TicketType.KITCHEN_TICKET, null))
+                .items(buildKitchenItems(items))
                 .totals(null)
                 .build();
     }
 
-    @Override
-    public Ticket buildKitchenTicketForItems(Order order, List<Long> itemIds) {
-        List<Item> itemsToPrint = filterItemsByIds(order, itemIds);
-        return buildKitchenTicket(order, itemsToPrint);
-    }
-
     // ===========================
-    // Header
+    // Header Building
     // ===========================
 
-    private TicketHeader buildHeader(Order order, TicketType type) {
-        Business business = order.getBusiness();
-        Seating seating = order.getSeating();
-        Employee employee = order.getEmployee();
-        Customer customer = order.getCustomer();
-
-        String businessName = null;
-        Long businessCuit = null;
-
-        if (business != null) {
-            businessName = business.getName();
-            businessCuit = business.getCuit();
-        }
-
-        String employeeName = toPersonName(employee);
-        String customerName = toPersonName(customer);
-
-        Integer seatingNumber = seating != null ? seating.getNumber() : null;
+    private TicketHeader buildHeader(Order order, TicketType type, String cae) {
+        String businessName = context.getCurrentBusiness().getName();
+        Long businessCuit = context.getCurrentBusiness().getCuit();
+        Integer seatingNumber = order.getSeating() != null ? order.getSeating().getNumber() : null;
 
         String title = switch (type) {
-            case KITCHEN -> null;
-            case BILL -> "CUENTA / CONSUMO";
-            case PAYMENT -> "COMPROBANTE DE PAGO";
+            case KITCHEN_TICKET -> null;
+            case PRE_TICKET -> "PRE TICKET";
+            case FISCAL_TICKET -> "FACTURA ELECTRÓNICA";
         };
 
         return TicketHeader.builder()
@@ -108,113 +77,72 @@ public class TicketBuilderService implements ITicketBuilderService {
                 .seatingNumber(seatingNumber)
                 .orderType(order.getType())
                 .peopleCount(order.getPeopleCount())
-                .employeeName(employeeName)
-                .customerName(customerName)
+                .employeeName(toPersonName(order.getEmployee()))
+                .customerName(toPersonName(order.getCustomer()))
                 .dateTime(order.getDateTime())
                 .title(title)
+                .cae(cae)
                 .build();
     }
 
-    private String toPersonName(Person person) {
-        if (person == null) {
-            return null;
-        }
-
-        String name = person.getName();
-        String lastName = person.getLastName();
-
-        boolean nameBlank = (name == null || name.isBlank());
-        boolean lastNameBlank = (lastName == null || lastName.isBlank());
-
-        if (nameBlank && lastNameBlank) {
-            return null;
-        }
-
-        if (nameBlank) {
-            return lastName;
-        }
-        if (lastNameBlank) {
-            return name;
-        }
-
-        return name + " " + lastName;
-    }
-
     // ===========================
-    // Items for KITCHEN ticket
+    // Items Building
     // ===========================
 
-    private List<TicketItem> buildKitchenItems(List<Item> items) {
-        List<TicketItem> result = new ArrayList<>();
-        if (items == null) {
-            return result;
-        }
-
-        for (Item item : items) {
-            if (item == null || Boolean.TRUE.equals(item.getDeleted())) {
-                continue;
-            }
-
-            List<TicketOptionGroup> optionGroups = buildOptionGroups(item.getSelectedOptions());
-            String comment = normalizeBlank(item.getComment());
-
-            TicketItem ticketItem = TicketItem.builder()
-                    .quantity(item.getQuantity())
-                    .productName(item.getProduct().getName())
-                    .unitPrice(null)      // no prices in kitchen tickets
-                    .lineTotal(null)
-                    .optionGroups(optionGroups)
-                    .comment(comment)
-                    .build();
-
-            result.add(ticketItem);
-        }
-
-        return result;
-    }
-
-    /**
-     * Filters items of the order by the given IDs, excluding logically deleted ones.
-     */
-    private List<Item> filterItemsByIds(Order order, List<Long> itemIds) {
-        if (order == null || order.getItems() == null || order.getItems().isEmpty()
-                || itemIds == null || itemIds.isEmpty()) {
+    private List<TicketItem> buildBillItems(Order order) {
+        if (order.getItems() == null) {
             return List.of();
         }
 
         return order.getItems().stream()
-                .filter(item -> itemIds.contains(item.getId()))
                 .filter(item -> !Boolean.TRUE.equals(item.getDeleted()))
+                .map(item -> TicketItem.builder()
+                        .quantity(item.getQuantity())
+                        .productName(item.getProduct().getName())
+                        .unitPrice(item.getUnitPrice())
+                        .lineTotal(item.getTotalPrice())
+                        .optionGroups(List.of())
+                        .comment(null)
+                        .build())
                 .toList();
     }
 
-    /**
-     * Builds a single flattened group of options for an item, traversing
-     * all levels of SelectedOption (nested extras).
-     */
+    private List<TicketItem> buildKitchenItems(List<Item> items) {
+        if (items == null) {
+            return List.of();
+        }
+
+        return items.stream()
+                .filter(item -> item != null && !Boolean.TRUE.equals(item.getDeleted()))
+                .map(item -> TicketItem.builder()
+                        .quantity(item.getQuantity())
+                        .productName(item.getProduct().getName())
+                        .unitPrice(null)
+                        .lineTotal(null)
+                        .optionGroups(buildOptionGroups(item.getSelectedOptions()))
+                        .comment(normalizeBlank(item.getComment()))
+                        .build())
+                .toList();
+    }
+
+    // ===========================
+    // Option Groups Building
+    // ===========================
+
     private List<TicketOptionGroup> buildOptionGroups(List<SelectedOption> rootOptions) {
         if (rootOptions == null || rootOptions.isEmpty()) {
             return List.of();
         }
 
         List<TicketOptionLine> lines = new ArrayList<>();
+        rootOptions.forEach(option -> collectOptionLines(option, 1, lines));
 
-        for (SelectedOption root : rootOptions) {
-            collectOptionLines(root, 1, lines); // level 1 for direct options
-        }
-
-        TicketOptionGroup group = TicketOptionGroup.builder()
+        return List.of(TicketOptionGroup.builder()
                 .groupName("Opciones")
                 .options(lines)
-                .build();
-
-        return List.of(group);
+                .build());
     }
 
-    /**
-     * Recursively flattens the SelectedOption tree into a list of TicketOptionLine,
-     * preserving the nesting level for proper tree rendering.
-     */
     private void collectOptionLines(SelectedOption option, int level, List<TicketOptionLine> acc) {
         if (option == null || option.getProductOption() == null) {
             return;
@@ -224,7 +152,6 @@ public class TicketBuilderService implements ITicketBuilderService {
         String name = productOption.getProduct() != null
                 ? productOption.getProduct().getName()
                 : "(Sin nombre)";
-
         int quantity = option.getQuantity() != null ? option.getQuantity() : 1;
 
         acc.add(TicketOptionLine.builder()
@@ -234,71 +161,53 @@ public class TicketBuilderService implements ITicketBuilderService {
                 .build());
 
         if (option.getSelectedOptions() != null) {
-            for (SelectedOption child : option.getSelectedOptions()) {
-                collectOptionLines(child, level + 1, acc);
-            }
+            option.getSelectedOptions().forEach(child -> collectOptionLines(child, level + 1, acc));
         }
     }
 
     // ===========================
-    // Items for BILL / PAYMENT
+    // Totals Building
     // ===========================
 
-    private List<TicketItem> buildBillingItems(Order order) {
-        List<TicketItem> result = new ArrayList<>();
-
-        for (Item item : order.getItems()) {
-            if (Boolean.TRUE.equals(item.getDeleted())) {
-                continue;
-            }
-
-            TicketItem ticketItem = TicketItem.builder()
-                    .quantity(item.getQuantity())
-                    .productName(item.getProduct().getName())
-                    .unitPrice(item.getUnitPrice())
-                    .lineTotal(item.getTotalPrice())
-                    .optionGroups(List.of())
-                    .comment(null)
-                    .build();
-
-            result.add(ticketItem);
-        }
-
-        return result;
-    }
-
-    // ===========================
-    // Totals (BILL / PAYMENT)
-    // ===========================
-
-    private TicketTotals buildTotals(Order order) {
+    private TicketTotals buildTotals(Order order, String cae) {
         Double subtotal = defaultZero(order.getSubtotal());
         Integer discountPercent = order.getDiscount() != null ? order.getDiscount() : 0;
-
-        double discountAmount = subtotal * discountPercent / 100.0;
-        discountAmount = roundToTwoDecimals(discountAmount);
-
+        double discountAmount = roundToTwoDecimals(subtotal * discountPercent / 100.0);
         Double total = defaultZero(order.getTotal());
-
-        boolean printInvoiceWarning = true;
 
         return TicketTotals.builder()
                 .subtotal(subtotal)
                 .discountPercent(discountPercent)
                 .discountAmount(discountAmount)
                 .total(total)
-                .printInvoiceWarning(printInvoiceWarning)
+                .cae(cae)
+                .printInvoiceWarning(cae == null)
                 .build();
     }
 
     // ===========================
-    // Helpers
+    // Helper Methods
     // ===========================
 
-    private String normalizeBlank(String value) {
-        if (value == null) {
+    private String toPersonName(Person person) {
+        if (person == null) {
             return null;
         }
+
+        String name = person.getName();
+        String lastName = person.getLastName();
+        boolean nameBlank = (name == null || name.isBlank());
+        boolean lastNameBlank = (lastName == null || lastName.isBlank());
+
+        if (nameBlank && lastNameBlank) return null;
+        if (nameBlank) return lastName;
+        if (lastNameBlank) return name;
+
+        return name + " " + lastName;
+    }
+
+    private String normalizeBlank(String value) {
+        if (value == null) return null;
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }

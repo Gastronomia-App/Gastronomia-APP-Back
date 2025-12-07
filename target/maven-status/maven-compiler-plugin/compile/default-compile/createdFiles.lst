@@ -51,6 +51,7 @@ com\progra3\cafeteria_api\afip\wsfe\generated\MonedaResponse.class
 com\progra3\cafeteria_api\exception\user\EmployeeCannotBeDeletedException.class
 com\progra3\cafeteria_api\service\port\ISeatingService.class
 com\progra3\cafeteria_api\repository\ProductGroupRepository.class
+com\progra3\cafeteria_api\service\port\ITicketService.class
 com\progra3\cafeteria_api\afip\wsfe\generated\AlicIva.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECabResponse.class
 com\progra3\cafeteria_api\exception\user\OwnerCannotBeDeletedException.class
@@ -290,6 +291,7 @@ com\progra3\cafeteria_api\afip\wsfe\generated\ArrayOfObs.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECAEAGet.class
 com\progra3\cafeteria_api\exception\product\ProductOptionNotFoundException.class
 com\progra3\cafeteria_api\validation\ValidOrderRequestValidator.class
+com\progra3\cafeteria_api\exception\order\FailedToPrintException.class
 com\progra3\cafeteria_api\service\port\IOrderService.class
 com\progra3\cafeteria_api\exception\seating\SeatingModificationNotAllowed.class
 com\progra3\cafeteria_api\model\dto\ExpenseUpdateDTO.class
@@ -311,6 +313,7 @@ com\progra3\cafeteria_api\exception\supplier\SupplierNotFoundException.class
 com\progra3\cafeteria_api\model\mapper\ProductComponentMapper.class
 com\progra3\cafeteria_api\afip\wsass\TaParser$TicketAccess.class
 com\progra3\cafeteria_api\model\entity\ProductOption$ProductOptionBuilder.class
+com\progra3\cafeteria_api\afip\wsfe\AfipInvoiceService$1.class
 com\progra3\cafeteria_api\model\dto\ticket\TicketTotals.class
 com\progra3\cafeteria_api\model\entity\Seating.class
 com\progra3\cafeteria_api\validation\ValidProductRequest.class
@@ -375,7 +378,6 @@ com\progra3\cafeteria_api\service\impl\SeatingService.class
 com\progra3\cafeteria_api\model\entity\Order.class
 com\progra3\cafeteria_api\service\impl\BusinessService.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FEDetRequest.class
-com\progra3\cafeteria_api\controller\AfipController.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FEParamGetTiposTributosResponse.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECAEResponse.class
 com\progra3\cafeteria_api\exception\user\EmployeeNotFoundException.class
@@ -388,10 +390,11 @@ com\progra3\cafeteria_api\model\dto\OrderResponseDTO$OrderResponseDTOBuilder.cla
 com\progra3\cafeteria_api\service\helper\SortUtils.class
 com\progra3\cafeteria_api\afip\wsfe\generated\ArrayOfActividadesTipo.class
 com\progra3\cafeteria_api\service\port\IProductOptionService.class
-com\progra3\cafeteria_api\controller\AfipController$TestInvoiceRequest.class
+com\progra3\cafeteria_api\model\enums\InvoiceType.class
 com\progra3\cafeteria_api\model\mapper\SupplierMapperImpl.class
 com\progra3\cafeteria_api\exception\customer\CustomerDniAlreadyExistsException.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECAEARegInformativoResponse.class
+com\progra3\cafeteria_api\service\impl\TicketService$1.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECAEASolicitarResponse.class
 com\progra3\cafeteria_api\model\dto\SeatingRequestDTO$SeatingRequestDTOBuilder.class
 com\progra3\cafeteria_api\model\dto\EmployeeResponseDTO.class
@@ -454,6 +457,7 @@ com\progra3\cafeteria_api\exception\user\EmployeeDeletedException.class
 com\progra3\cafeteria_api\model\dto\OrderPaymentMethodDTO.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FEDetResponse.class
 com\progra3\cafeteria_api\model\dto\ticket\TicketItem$TicketItemBuilder.class
+com\progra3\cafeteria_api\service\impl\TicketService.class
 com\progra3\cafeteria_api\model\dto\SupplierUpdateDTO.class
 com\progra3\cafeteria_api\security\JwtAuthenticationFilter.class
 com\progra3\cafeteria_api\model\dto\SeatingPositionRequestDTO.class
@@ -474,6 +478,5 @@ com\progra3\cafeteria_api\model\dto\EmployeeUpdateDTO$EmployeeUpdateDTOBuilder.c
 com\progra3\cafeteria_api\config\AfipConfig.class
 com\progra3\cafeteria_api\afip\wsfe\generated\FECAEDetResponse.class
 com\progra3\cafeteria_api\exception\product\ProductNameAlreadyExistsException.class
-com\progra3\cafeteria_api\service\impl\BillingService.class
 com\progra3\cafeteria_api\model\dto\SeatingResponseDTO$SeatingResponseDTOBuilder.class
 com\progra3\cafeteria_api\security\EmployeeDetailsService.class

@@ -171,7 +171,7 @@ public class TicketPdfService implements ITicketPdfService {
         TicketType type = ticket.type();
 
         // Minimal header for kitchen tickets: mesa, fecha/hora y mozo
-        if (type == TicketType.KITCHEN) {
+        if (type == TicketType.KITCHEN_TICKET) {
             Table infoTable = new Table(UnitValue.createPercentArray(new float[]{1, 1}));
             infoTable.setWidth(UnitValue.createPercentValue(100));
 
@@ -219,8 +219,8 @@ public class TicketPdfService implements ITicketPdfService {
             ticketTitle = header.title();
         } else {
             switch (type) {
-                case BILL -> ticketTitle = "DETALLE DE CONSUMO";
-                case PAYMENT -> ticketTitle = "FACTURA";
+                case PRE_TICKET -> ticketTitle = "DETALLE DE CONSUMO";
+                case FISCAL_TICKET -> ticketTitle = "FACTURA";
                 default -> ticketTitle = "TICKET";
             }
         }
@@ -281,7 +281,7 @@ public class TicketPdfService implements ITicketPdfService {
     private void addBody(Document doc, Ticket ticket, PdfFont fontBold, PdfFont fontMono) {
         addDashedSeparator(doc);
 
-        if (ticket.type() == TicketType.KITCHEN) {
+        if (ticket.type() == TicketType.KITCHEN_TICKET) {
             addKitchenBody(doc, ticket, fontBold, fontMono);
         } else {
             addBillingBody(doc, ticket, fontBold);

@@ -86,7 +86,7 @@ public class WsassClient {
     private String buildSoapRequest(String base64CmsData) {
         return """
                 <?xml version="1.0" encoding="UTF-8"?>
-                <soapenv:Envelope xmlns:soapenv="https://schemas.xmlsoap.org/soap/envelope/"
+                <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
                                   xmlns:wsaa="https://wsaa.view.sua.dvadac.desein.afip.gov">
                   <soapenv:Header/>
                   <soapenv:Body>

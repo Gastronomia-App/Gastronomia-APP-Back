@@ -1,11 +1,13 @@
 package com.progra3.cafeteria_api.controller;
 
-import com.progra3.cafeteria_api.model.entity.Item;
-import com.progra3.cafeteria_api.service.helper.SortUtils;
 import com.progra3.cafeteria_api.model.dto.*;
+import com.progra3.cafeteria_api.model.dto.ticket.FiscalTicketRequestDTO;
+import com.progra3.cafeteria_api.model.enums.InvoiceType;
 import com.progra3.cafeteria_api.model.enums.OrderStatus;
 import com.progra3.cafeteria_api.model.enums.OrderType;
+import com.progra3.cafeteria_api.service.helper.SortUtils;
 import com.progra3.cafeteria_api.service.port.IOrderService;
+import com.progra3.cafeteria_api.service.port.ITicketService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -23,18 +25,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
-import com.progra3.cafeteria_api.model.entity.Order;
-import com.progra3.cafeteria_api.model.enums.TicketType;
-import com.progra3.cafeteria_api.service.port.ITicketBuilderService;
-import com.progra3.cafeteria_api.service.port.ITicketPdfService;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 
 @RestController
 @RequiredArgsConstructor
@@ -43,12 +42,8 @@ import org.springframework.http.MediaType;
 public class OrderController {
 
     private final IOrderService orderService;
-
+    private final ITicketService ticketService;
     private final SortUtils sortUtils;
-
-    private final ITicketBuilderService ticketBuilderService;
-
-    private final ITicketPdfService ticketPdfService;
 
     @Operation(summary = "Create a new order", description = "Creates a new order with optional customer and employee IDs. The order starts in ACTIVE state.")
     @ApiResponses({
@@ -64,14 +59,14 @@ public class OrderController {
                     content = @Content(
                             schema = @Schema(implementation = OrderRequestDTO.class),
                             examples = @ExampleObject(value = """
-                                {
-                                  "seatingId": 5,
-                                  "employeeId": 45,
-                                  "customerId": 123,
-                                  "orderType": "TABLE",
-                                  "peopleCount": 4
-                                }
-                                """)
+                                    {
+                                      "seatingId": 5,
+                                      "employeeId": 45,
+                                      "customerId": 123,
+                                      "orderType": "TABLE",
+                                      "peopleCount": 4
+                                    }
+                                    """)
                     )
             )
             @RequestBody @Valid OrderRequestDTO dto) {
@@ -291,34 +286,21 @@ public class OrderController {
                     content = @Content(
                             schema = @Schema(implementation = OrderPaymentMethodDTO.class),
                             examples = @ExampleObject(value = """
-                                [
-                                  {
-                                    "paymentMethodId": 1,
-                                    "amount": 500.00
-                                  },
-                                  {
-                                    "paymentMethodId": 2,
-                                    "amount": 250.50
-                                  }
-                                ]
-                                """)
+                                    [
+                                      {
+                                        "paymentMethodId": 1,
+                                        "amount": 500.00
+                                      },
+                                      {
+                                        "paymentMethodId": 2,
+                                        "amount": 250.50
+                                      }
+                                    ]
+                                    """)
                     )
             )
             @RequestBody @Valid List<OrderPaymentMethodDTO> paymentMethods) {
         return ResponseEntity.ok(orderService.finalizeOrder(id, paymentMethods));
-    }
-
-    @Operation(summary = "Mark an order as billed", description = "Updates the order status to BILLED, indicating the bill was printed")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Order status updated to BILLED"),
-            @ApiResponse(responseCode = "404", description = "Order not found", content = @Content)
-    })
-    @PreAuthorize("hasAnyRole('CASHIER', 'OWNER', 'ADMIN')")
-    @PatchMapping("/{id}/bill")
-    public ResponseEntity<OrderResponseDTO> billOrder(
-            @Parameter(description = "ID of the order to mark as billed")
-            @PathVariable @NotNull Long id) {
-        return ResponseEntity.ok(orderService.updateStatus(id, OrderStatus.BILLED));
     }
 
     @Operation(summary = "Cancel an order", description = "Marks the order as CANCELED and excludes it from further operations")
@@ -335,134 +317,55 @@ public class OrderController {
     }
 
     @Operation(
-            summary = "Generate kitchen ticket for an order",
-            description = "Generates a small PDF ticket for the kitchen with items and options, without prices."
+            summary = "Generate pre-ticket for an order",
+            description = "Generates a PDF pre-ticket (cuenta) for the customer showing items and totals, without payment details or CAE."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Kitchen ticket generated successfully",
+            @ApiResponse(responseCode = "200", description = "Pre-ticket generated successfully",
                     content = @Content(mediaType = "application/pdf")),
-            @ApiResponse(responseCode = "404", description = "Order not found", content = @Content)
+            @ApiResponse(responseCode = "404", description = "Order not found", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Failed to generate pre-ticket", content = @Content)
     })
     @PreAuthorize("hasAnyRole('CASHIER', 'WAITER', 'OWNER', 'ADMIN')")
-    @GetMapping("/{id}/tickets/kitchen")
-    public ResponseEntity<byte[]> generateKitchenTicket(
-            @Parameter(description = "ID of the order to print the kitchen ticket for")
+    @GetMapping(value = "/{id}/tickets/pre-ticket", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> generatePreTicket(
+            @Parameter(description = "ID of the order to generate pre-ticket for")
             @PathVariable @NotNull Long id) {
 
-        Order order = orderService.getEntityById(id);
-
-        var ticket = ticketBuilderService.buildTicket(order, TicketType.KITCHEN);
-        byte[] pdf = ticketPdfService.generateTicketPdf(ticket);
+        byte[] pdf = ticketService.generatePreTicket(id);
 
         return ResponseEntity
                 .ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "inline; filename=order-" + id + "-kitchen.pdf")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=order-" + id + "-pre-ticket.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .contentLength(pdf.length)
                 .body(pdf);
     }
 
     @Operation(
-            summary = "Generate kitchen ticket for specific items",
-            description = "Generates a small PDF kitchen ticket only for the provided items of the order."
+            summary = "Generate fiscal ticket (electronic invoice) for an order",
+            description = "Generates an electronic invoice via AFIP and returns a PDF fiscal ticket with CAE. Supports Invoice types A, B, and C."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Kitchen ticket generated successfully",
+            @ApiResponse(responseCode = "200", description = "Fiscal ticket generated successfully",
                     content = @Content(mediaType = "application/pdf")),
-            @ApiResponse(responseCode = "204", description = "No items found for the given IDs", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Order not found", content = @Content)
-    })
-    @PreAuthorize("hasAnyRole('CASHIER', 'WAITER', 'OWNER', 'ADMIN')")
-    @PostMapping(
-            value = "/{id}/tickets/kitchen",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_PDF_VALUE
-    )
-    public ResponseEntity<byte[]> generateKitchenTicketForItems(
-            @Parameter(description = "ID of the order to print the kitchen ticket for")
-            @PathVariable @NotNull Long id,
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "List of item IDs to include in the kitchen ticket",
-                    required = true
-            )
-            @RequestBody List<Long> itemIds
-    ) {
-        Order order = orderService.getEntityById(id);
-
-        var ticket = ticketBuilderService.buildKitchenTicketForItems(order, itemIds);
-
-        if (ticket.items() == null || ticket.items().isEmpty()) {
-            return ResponseEntity.noContent().build();
-        }
-
-        byte[] pdf = ticketPdfService.generateTicketPdf(ticket);
-
-        return ResponseEntity
-                .ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "inline; filename=order-" + id + "-kitchen-partial.pdf")
-                .contentType(MediaType.APPLICATION_PDF)
-                .contentLength(pdf.length)
-                .body(pdf);
-    }
-
-    @Operation(
-            summary = "Generate bill ticket for an order",
-            description = "Generates a PDF ticket for the customer with items and totals, without payment details."
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Bill ticket generated successfully",
-                    content = @Content(mediaType = "application/pdf")),
-            @ApiResponse(responseCode = "404", description = "Order not found", content = @Content)
-    })
-    @PreAuthorize("hasAnyRole('CASHIER', 'WAITER', 'OWNER', 'ADMIN')")
-    @GetMapping(
-            value = "/{id}/tickets/bill",
-            produces = MediaType.APPLICATION_PDF_VALUE
-    )
-    public ResponseEntity<byte[]> generateBillTicket(
-            @Parameter(description = "ID of the order to print the bill ticket for")
-            @PathVariable @NotNull Long id) {
-
-        Order order = orderService.getEntityById(id);
-
-        var ticket = ticketBuilderService.buildTicket(order, TicketType.BILL);
-        byte[] pdf = ticketPdfService.generateTicketPdf(ticket);
-
-        return ResponseEntity
-                .ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "inline; filename=order-" + id + "-bill.pdf")
-                .contentType(MediaType.APPLICATION_PDF)
-                .contentLength(pdf.length)
-                .body(pdf);
-    }
-
-    @Operation(
-            summary = "Generate payment ticket for an order",
-            description = "Generates a PDF payment ticket for the customer with items and totals. Payment details can be added later."
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Payment ticket generated successfully",
-                    content = @Content(mediaType = "application/pdf")),
-            @ApiResponse(responseCode = "404", description = "Order not found", content = @Content)
+            @ApiResponse(responseCode = "400", description = "Invalid invoice type or order missing customer data", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Order not found", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Failed to generate fiscal ticket or AFIP service unavailable", content = @Content)
     })
     @PreAuthorize("hasAnyRole('CASHIER', 'OWNER', 'ADMIN')")
-    @GetMapping("/{id}/tickets/payment")
-    public ResponseEntity<byte[]> generatePaymentTicket(
-            @Parameter(description = "ID of the order to print the payment ticket for")
-            @PathVariable @NotNull Long id) {
+    @GetMapping(value = "/{id}/tickets/fiscal-ticket", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> generateFiscalTicket(
+            @Parameter(description = "ID of the order to generate fiscal ticket for")
+            @PathVariable @NotNull Long id,
+            @Parameter(description = "Fiscal ticket request data", required = true)
+            @RequestBody @Valid FiscalTicketRequestDTO fiscalTicketRequestDTO) {
 
-        Order order = orderService.getEntityById(id);
-
-        var ticket = ticketBuilderService.buildTicket(order, TicketType.BILL);
-        byte[] pdf = ticketPdfService.generateTicketPdf(ticket);
+        byte[] pdf = ticketService.generateFiscalTicket(id, fiscalTicketRequestDTO);
 
         return ResponseEntity
                 .ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "inline; filename=order-" + id + "-bill.pdf")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=order-" + id + "-fiscal-ticket.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .contentLength(pdf.length)
                 .body(pdf);

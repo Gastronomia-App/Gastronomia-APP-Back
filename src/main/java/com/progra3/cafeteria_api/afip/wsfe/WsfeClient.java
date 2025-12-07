@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.springframework.stereotype.Component;
 import org.springframework.ws.client.core.support.WebServiceGatewaySupport;
+import org.springframework.ws.soap.client.core.SoapActionCallback;
 
 /**
  * SOAP client for AFIP WSFEv1 (Electronic Invoice) service.
@@ -51,7 +52,11 @@ public class WsfeClient extends WebServiceGatewaySupport {
         request.setPtoVta(ptoVta);
 
         FECompUltimoAutorizadoResponse response =
-                (FECompUltimoAutorizadoResponse) getWebServiceTemplate().marshalSendAndReceive(request);
+                (FECompUltimoAutorizadoResponse) getWebServiceTemplate().marshalSendAndReceive(
+                        wsfeUrl,
+                        request,
+                        new SoapActionCallback("http://ar.gov.afip.dif.FEV1/FECompUltimoAutorizado")
+                );
 
         log.debug("Last authorized voucher response received");
         return response;
@@ -70,7 +75,11 @@ public class WsfeClient extends WebServiceGatewaySupport {
         }
 
         FECAESolicitarResponse response =
-                (FECAESolicitarResponse) getWebServiceTemplate().marshalSendAndReceive(request);
+                (FECAESolicitarResponse) getWebServiceTemplate().marshalSendAndReceive(
+                        wsfeUrl,
+                        request,
+                        new SoapActionCallback("http://ar.gov.afip.dif.FEV1/FECAESolicitar")
+                );
 
         log.debug("CAE solicitation response received");
         return response;
@@ -82,7 +91,11 @@ public class WsfeClient extends WebServiceGatewaySupport {
         FEDummy request = new FEDummy();
 
         FEDummyResponse response =
-                (FEDummyResponse) getWebServiceTemplate().marshalSendAndReceive(request);
+                (FEDummyResponse) getWebServiceTemplate().marshalSendAndReceive(
+                        wsfeUrl,
+                        request,
+                        new SoapActionCallback("http://ar.gov.afip.dif.FEV1/FEDummy")
+                );
 
         log.debug("Server status check completed");
         return response;

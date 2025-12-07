@@ -77,6 +77,12 @@ public record TicketHeader(
          * - "CUENTA / CONSUMO" for BILL
          * - "COMPROBANTE DE PAGO" for PAYMENT
          */
-        String title
+        String title,
+
+        /**
+         * CAE (Código de Autorización Electrónico) from AFIP.
+         * Only present for fiscal/electronic invoices.
+         */
+        String cae
 ) {
 }
