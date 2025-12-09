@@ -36,6 +36,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/employees/login").permitAll()
                         .requestMatchers(HttpMethod.POST,"/api/businesses").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/businesses/public/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/public/menu/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/uploads/products/**").permitAll()
                         .requestMatchers(
                                 "/swagger-ui/**",

@@ -12,4 +12,5 @@ public interface IBusinessService {
     BusinessResponseDTO updateBusiness(Long id, BusinessUpdateDTO dto);
     void deleteBusiness(Long id);
     BusinessResponseDTO getBusinessForCurrentUser();
+    BusinessResponseDTO getBusinessBySlugPublic(String slug);
 }

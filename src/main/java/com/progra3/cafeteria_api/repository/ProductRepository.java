@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -43,4 +45,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("SELECT p FROM Product p WHERE p.id = :id AND p.business.id = :businessId")
     Optional<Product> findByIdAndBusiness_IdWithComponents(@Param("id") Long id,
                                                            @Param("businessId") Long businessId);
+
+    @Query("""
+    select p from Product p
+    join p.category c
+    join p.business b
+    where b.slug = :slug
+""")
+    List<Product> findMenuProductsByBusinessSlug(String slug);
 }

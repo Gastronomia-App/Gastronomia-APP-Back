@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -13,4 +14,5 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     Page<Category> findByBusiness_Id(Long businessId, Pageable pageable);
     Optional<Category> findByIdAndBusiness_Id(Long id, Long businessId);
     boolean existsByNameAndBusiness_Id(String name, Long businessId);
+    List<Category> findByBusiness_SlugAndVisibleInMenuTrueOrderByNameAsc(String businessSlug);
 }

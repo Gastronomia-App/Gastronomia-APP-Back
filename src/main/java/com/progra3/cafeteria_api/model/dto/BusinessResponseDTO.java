@@ -19,6 +19,9 @@ public record BusinessResponseDTO(
         @Schema(description = "Owner (admin) of the business")
         EmployeeResponseDTO owner,
 
+        @Schema(description = "Public URL slug of the business", example = "la-fonte-de-oro")
+        String slug,
+
         @Schema(description = "Number of employees excluding owner", example = "3")
         Integer employeesCount,
 

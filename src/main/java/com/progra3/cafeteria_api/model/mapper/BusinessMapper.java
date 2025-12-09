@@ -18,6 +18,7 @@ public interface BusinessMapper {
     Business toEntity(BusinessRequestDTO dto);
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "slug", ignore = true)
     @Mapping(target = "employees", ignore = true)
     @Mapping(target = "customers", ignore = true)
     @Mapping(target = "suppliers", ignore = true)

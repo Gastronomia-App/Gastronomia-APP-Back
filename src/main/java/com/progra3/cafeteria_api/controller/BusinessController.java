@@ -146,4 +146,24 @@ public class BusinessController {
         businessService.deleteBusiness(id);
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(
+            summary = "Get business by slug (public)",
+            description = """
+                    Public endpoint used mainly by the public menu.
+                    It returns business information based on its slug, 
+                    as long as the business is not deleted.
+                    """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Business found successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = BusinessResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Business not found", content = @Content)
+    })
+    @GetMapping("/public/{slug}")
+    public ResponseEntity<BusinessResponseDTO> getBySlug(@PathVariable String slug) {
+        BusinessResponseDTO responseDTO = businessService.getBusinessBySlugPublic(slug);
+        return ResponseEntity.ok(responseDTO);
+    }
 }

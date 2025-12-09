@@ -32,6 +32,9 @@ public class Business {
     @Column(nullable = false)
     private Boolean deleted = false;
 
+    @Column(nullable = false, unique = true, length = 120)
+    private String slug;
+
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, optional = false)
     @JoinColumn(name = "owner_id", nullable = false)
     private Employee owner;
