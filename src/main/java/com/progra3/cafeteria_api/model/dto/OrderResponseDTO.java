@@ -16,6 +16,9 @@ public record OrderResponseDTO (
         @Schema(description = "Full name of the employee who handled the order", example = "Juan Pérez")
         String employeeName,
 
+        @Schema(description = "Unique identifier of the customer who placed the order", example = "205")
+        Long customerId,
+
         @Schema(description = "Full name of the customer who placed the order", example = "María Gómez")
         String customerName,
 

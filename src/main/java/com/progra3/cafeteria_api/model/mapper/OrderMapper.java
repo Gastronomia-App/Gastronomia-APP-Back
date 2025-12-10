@@ -11,6 +11,7 @@ import java.util.List;
 public interface OrderMapper {
 
     @Mapping(target = "customerName", expression = "java(order.getCustomer() != null ? order.getCustomer().getName() : null)")
+    @Mapping(target = "customerId", source = "customer.id")
     @Mapping(target = "employeeName", expression = "java(order.getEmployee() != null ? order.getEmployee().getName() : null)")
     @Mapping(target = "seatingNumber", expression = "java(order.getSeating() != null ? order.getSeating().getNumber() : null)")
     @Mapping(target = "orderType", source = "type")

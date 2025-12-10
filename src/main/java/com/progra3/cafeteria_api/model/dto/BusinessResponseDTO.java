@@ -11,7 +11,7 @@ public record BusinessResponseDTO(
         String name,
 
         @Schema(description = "CUIT (tax ID) of the business", example = "30-12345678-9")
-        String cuit,
+        Long cuit,
 
         @Schema(description = "Address details of the business")
         AddressResponseDTO address,

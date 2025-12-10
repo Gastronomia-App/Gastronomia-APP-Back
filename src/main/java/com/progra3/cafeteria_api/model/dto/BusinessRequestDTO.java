@@ -15,7 +15,7 @@ public record BusinessRequestDTO(
 
         @Schema(description = "CUIT (tax ID) of the business", example = "30-12345678-9")
         @NotBlank(message = "CUIT cannot be blank")
-        String cuit,
+        Long cuit,
 
         @Schema(description = "Address details of the business")
         @Valid

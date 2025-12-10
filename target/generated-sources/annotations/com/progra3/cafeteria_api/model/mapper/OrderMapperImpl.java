@@ -1,8 +1,10 @@
 package com.progra3.cafeteria_api.model.mapper;
 
 import com.progra3.cafeteria_api.model.dto.ItemResponseDTO;
+import com.progra3.cafeteria_api.model.dto.OrderPaymentMethodResponseDTO;
 import com.progra3.cafeteria_api.model.dto.OrderRequestDTO;
 import com.progra3.cafeteria_api.model.dto.OrderResponseDTO;
+import com.progra3.cafeteria_api.model.entity.Customer;
 import com.progra3.cafeteria_api.model.entity.Item;
 import com.progra3.cafeteria_api.model.entity.Order;
 import com.progra3.cafeteria_api.model.enums.OrderType;
@@ -15,7 +17,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-30T15:57:00-0300",
+    date = "2025-12-07T15:28:20-0300",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 25.0.1 (Oracle Corporation)"
 )
 @Component
@@ -30,6 +32,7 @@ public class OrderMapperImpl implements OrderMapper {
             return null;
         }
 
+        Long customerId = null;
         OrderType orderType = null;
         Long id = null;
         List<ItemResponseDTO> items = null;
@@ -40,6 +43,7 @@ public class OrderMapperImpl implements OrderMapper {
         Double subtotal = null;
         Double total = null;
 
+        customerId = orderCustomerId( order );
         orderType = order.getType();
         id = order.getId();
         items = itemListToItemResponseDTOList( order.getItems() );
@@ -55,8 +59,9 @@ public class OrderMapperImpl implements OrderMapper {
         String customerName = order.getCustomer() != null ? order.getCustomer().getName() : null;
         String employeeName = order.getEmployee() != null ? order.getEmployee().getName() : null;
         Integer seatingNumber = order.getSeating() != null ? order.getSeating().getNumber() : null;
+        List<OrderPaymentMethodResponseDTO> paymentMethods = mapPaymentMethods(order.getOrderPaymentMethods());
 
-        OrderResponseDTO orderResponseDTO = new OrderResponseDTO( id, employeeName, customerName, seatingNumber, orderType, items, dateTime, peopleCount, discount, status, subtotal, total );
+        OrderResponseDTO orderResponseDTO = new OrderResponseDTO( id, employeeName, customerId, customerName, seatingNumber, orderType, items, dateTime, peopleCount, discount, status, subtotal, total, paymentMethods );
 
         return orderResponseDTO;
     }
@@ -73,6 +78,21 @@ public class OrderMapperImpl implements OrderMapper {
         order.setPeopleCount( orderRequestDTO.peopleCount() );
 
         return order;
+    }
+
+    private Long orderCustomerId(Order order) {
+        if ( order == null ) {
+            return null;
+        }
+        Customer customer = order.getCustomer();
+        if ( customer == null ) {
+            return null;
+        }
+        Long id = customer.getId();
+        if ( id == null ) {
+            return null;
+        }
+        return id;
     }
 
     protected List<ItemResponseDTO> itemListToItemResponseDTOList(List<Item> list) {
