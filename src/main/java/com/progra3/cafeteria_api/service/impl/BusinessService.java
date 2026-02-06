@@ -146,18 +146,14 @@ public class BusinessService implements IBusinessService {
             throw new AccessDeniedException("No tienes permiso para modificar este negocio");
         }
 
-        // Validate name uniqueness if changed
-        if (dto.name() != null && !dto.name().equals(business.getName())) {
-            if (businessRepository.existsByName(dto.name())) {
-                throw new BusinessNameAlreadyExistsException(dto.name());
-            }
+        if (businessRepository.existsByNameAndIdNot(dto.name(), id)) {
+            throw new BusinessNameAlreadyExistsException(dto.name());
         }
 
-        // Validate CUIT uniqueness if changed
-        if (dto.cuit() != null && !dto.cuit().equals(business.getCuit())) {
-            if (businessRepository.existsByCuit(dto.cuit())) {
-                throw new BusinessCuitAlreadyExistsException(dto.cuit());
-            }
+        Long cuitVal = Long.parseLong(dto.cuit());
+
+        if (businessRepository.existsByCuitAndIdNot(cuitVal, id)) {
+            throw new BusinessCuitAlreadyExistsException(dto.cuit());
         }
 
         businessMapper.updateBusinessFromDTO(dto, business);

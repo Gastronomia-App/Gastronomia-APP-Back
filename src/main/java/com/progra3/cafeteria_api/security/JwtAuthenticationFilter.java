@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -29,29 +31,55 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String jwt;
         final String username;
 
+        // 1. Basic header validation
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         jwt = authHeader.substring(7);
-        username = jwtService.extractUsername(jwt);
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            EmployeeDetails userDetails = (EmployeeDetails) userDetailsService.loadUserByUsername(username);
+        try {
+            // 2. Attempt to extract username from token (can fail if token is corrupt/expired)
+            username = jwtService.extractUsername(jwt);
 
-            if (jwtService.isTokenValid(jwt, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities()
-                );
-                authToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
+                // SOLUTION START: Try-Catch to handle modified/deleted users
+                try {
+                    // Load user from DB. If username changed, this throws UsernameNotFoundException
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+                    // If user exists, validate token
+                    if (jwtService.isTokenValid(jwt, userDetails)) {
+                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                                userDetails, null, userDetails.getAuthorities()
+                        );
+                        authToken.setDetails(
+                                new WebAuthenticationDetailsSource().buildDetails(request)
+                        );
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                    }
+                } catch (UsernameNotFoundException e) {
+                    //  THE FIX: The token user no longer exists in the DB (e.g. username changed).
+
+                    // Return 401 (Unauthorized) instead of letting it explode as 500.
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"error\": \"Invalid credentials\", \"message\": \"User not found or credentials changed.\"}");
+                    return; // IMPORTANT: Stop the request here. Do not proceed to the Controller.
+                }
             }
-        }
 
-        filterChain.doFilter(request, response);
+            // If everything went well (or no user to authenticate), continue
+            filterChain.doFilter(request, response);
+
+        } catch (Exception e) {
+            // General handling for expired, malformed, or invalid signature tokens.
+            // This ensures any JWT issue returns a clean 401.
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"Invalid token\", \"message\": \"" + e.getMessage() + "\"}");
+        }
     }
 }
-
