@@ -47,10 +47,14 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                                                            @Param("businessId") Long businessId);
 
     @Query("""
-    select p from Product p
-    join p.category c
-    join p.business b
-    where b.slug = :slug
+    SELECT p FROM Product p
+    JOIN p.category c
+    JOIN p.business b
+    WHERE b.slug = :slug
+    AND p.active = true
+    AND c.visibleInMenu = true
+    AND p.imageUrl IS NOT NULL
+    ORDER BY c.id, p.name
 """)
-    List<Product> findMenuProductsByBusinessSlug(String slug);
+    List<Product> findMenuProductsByBusinessSlug(@Param("slug") String slug);
 }

@@ -45,6 +45,7 @@ public class PublicMenuService implements IPublicMenuService {
                 productRepository.findMenuProductsByBusinessSlug(slug);
 
         Map<Long, List<Product>> productsByCategory = products.stream()
+                .filter(Product::isActive)
                 .collect(Collectors.groupingBy(p -> p.getCategory().getId()));
 
         return categories.stream()
