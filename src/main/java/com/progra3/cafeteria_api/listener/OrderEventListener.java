@@ -16,16 +16,28 @@ public class OrderEventListener {
 
     @EventListener
     public void onOrderCreated(OrderCreatedEvent event) {
-        Order order = event.order();
-
-        auditService.getInProgressAudit().ifPresent(audit -> {
-            order.setAudit(audit);
-            audit.getOrders().add(order);
-        });
+        // Las órdenes NO se asocian al audit cuando se crean
+        // Se asociarán cuando se finalicen dentro del período del audit
     }
 
     @EventListener
     public void onOrderFinalized(OrderFinalizedEvent event) {
-        auditService.getInProgressAudit().ifPresent(auditService::recalculateAudit);
+        Order order = event.order();
+
+        auditService.getInProgressAudit().ifPresent(audit -> {
+            // Verificar si la orden se finalizó dentro del período del audit
+            if (order.getEndDateTime() != null &&
+                !order.getEndDateTime().isBefore(audit.getStartTime())) {
+
+                // Asociar la orden al audit
+                order.setAudit(audit);
+                if (!audit.getOrders().contains(order)) {
+                    audit.getOrders().add(order);
+                }
+
+                // Recalcular el audit
+                auditService.recalculateAudit(audit);
+            }
+        });
     }
 }

@@ -31,8 +31,11 @@ public record OrderResponseDTO (
         @Schema(description = "List of items included in the order")
         List<ItemResponseDTO> items,
 
-        @Schema(description = "Date and time when the order was placed", example = "2024-06-14T12:45:00")
-        LocalDateTime dateTime,
+        @Schema(description = "Date and time when the order was opened", example = "2024-06-14T12:45:00")
+        LocalDateTime startDateTime,
+
+        @Schema(description = "Date and time when the order was closed", example = "2024-06-14T14:30:00")
+        LocalDateTime endDateTime,
 
         @Schema(description = "Number of people for whom the order was made", example = "3")
         Integer peopleCount,

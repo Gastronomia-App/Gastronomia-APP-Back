@@ -103,7 +103,15 @@ public class OrderService implements IOrderService {
         if (start.isAfter(end)) {
             throw new InvalidDateException("Start should be earlier than end");
         }
-        return orderRepository.findByDateTimeBetweenAndBusiness_Id(start, end, employeeContext.getCurrentBusinessId());
+        return orderRepository.findByStartDateTimeBetweenAndBusiness_Id(start, end, employeeContext.getCurrentBusinessId());
+    }
+
+    @Override
+    public List<Order> getByEndDateTimeBetween(LocalDateTime start, LocalDateTime end) {
+        if (start.isAfter(end)) {
+            throw new InvalidDateException("Start should be earlier than end");
+        }
+        return orderRepository.findByEndDateTimeBetweenAndBusiness_Id(start, end, employeeContext.getCurrentBusinessId());
     }
 
     @Transactional
@@ -150,8 +158,11 @@ public class OrderService implements IOrderService {
 
         order.setStatus(newStatus);
 
-        if (newStatus == OrderStatus.FINALIZED && order.getSeating() != null) {
-            order.getSeating().setActiveOrder(null);
+        if (newStatus == OrderStatus.FINALIZED) {
+            order.setEndDateTime(LocalDateTime.now(clock));
+            if (order.getSeating() != null) {
+                order.getSeating().setActiveOrder(null);
+            }
             eventPublisher.publishEvent(new OrderFinalizedEvent(order));
         }
 
@@ -201,6 +212,7 @@ public class OrderService implements IOrderService {
         seatingService.updateStatus(order.getSeating(), OrderStatus.FINALIZED);
 
         order.setStatus(OrderStatus.FINALIZED);
+        order.setEndDateTime(LocalDateTime.now(clock));
 
         if (order.getSeating() != null) {
             order.getSeating().setActiveOrder(null);
@@ -347,7 +359,8 @@ public class OrderService implements IOrderService {
         order.setCustomer(customer);
         order.setSeating(seating);
 
-        order.setDateTime(LocalDateTime.now(clock));
+        order.setStartDateTime(LocalDateTime.now(clock));
+        order.setEndDateTime(null);
         order.setDiscount(Optional.ofNullable(customer).map(Customer::getDiscount).orElse(Constant.NO_DISCOUNT));
         order.setStatus(OrderStatus.ACTIVE);
         order.setSubtotal(Constant.ZERO_AMOUNT);

@@ -49,8 +49,11 @@ public class Order {
     @Column(nullable = false)
     private OrderType type;
 
-    @Column(name = "date_time", nullable = false)
-    private LocalDateTime dateTime;
+    @Column(name = "start_date_time", nullable = false)
+    private LocalDateTime startDateTime;
+
+    @Column(name = "end_date_time")
+    private LocalDateTime endDateTime;
 
     @Column(nullable = false)
     private Integer discount;

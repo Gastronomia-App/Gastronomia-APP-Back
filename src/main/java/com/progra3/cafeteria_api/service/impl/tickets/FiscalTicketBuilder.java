@@ -73,7 +73,7 @@ public class FiscalTicketBuilder implements TicketBuilderStrategy {
                 .concept(ticketContext.concept() != null ? ticketContext.concept() : "Productos")
                 .customerIvaCondition(customerIvaConditionStr)
                 // Order data
-                .dateTime(order.getDateTime())
+                .dateTime(order.getEndDateTime() != null ? order.getEndDateTime() : order.getStartDateTime())
                 .title(invoiceTitle)
                 .build();
     }
@@ -112,9 +112,11 @@ public class FiscalTicketBuilder implements TicketBuilderStrategy {
 
             Map<String, Object> qrJson = new LinkedHashMap<>();
             qrJson.put("ver", 1);
-            qrJson.put("fecha", order.getDateTime() != null
-                    ? order.getDateTime().toLocalDate().format(DateTimeFormatter.ISO_LOCAL_DATE)
-                    : LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));
+            qrJson.put("fecha", order.getEndDateTime() != null
+                    ? order.getEndDateTime().toLocalDate().format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    : (order.getStartDateTime() != null
+                        ? order.getStartDateTime().toLocalDate().format(DateTimeFormatter.ISO_LOCAL_DATE)
+                        : LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)));
             qrJson.put("cuit", business.getCuit());
             qrJson.put("ptoVta", ticketContext.puntoVenta() != null ? ticketContext.puntoVenta() : puntoVenta);
             qrJson.put("tipoCmp", ticketContext.invoiceType().getInvoiceCode());

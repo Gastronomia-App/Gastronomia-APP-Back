@@ -22,8 +22,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "o.business.id = :businessId AND " +
             "(:customerName IS NULL OR LOWER(CONCAT(COALESCE(c.name, ''), ' ', COALESCE(c.lastName, ''))) LIKE LOWER(CONCAT('%', :customerName, '%'))) AND " +
             "(:employeeName IS NULL OR LOWER(CONCAT(o.employee.name, ' ', o.employee.lastName)) LIKE LOWER(CONCAT('%', :employeeName, '%'))) AND " +
-            "(:startDate IS NULL OR o.dateTime >= :startDate) AND " +
-            "(:endDate IS NULL OR o.dateTime <= :endDate) AND " +
+            "(:startDate IS NULL OR o.startDateTime >= :startDate) AND " +
+            "(:endDate IS NULL OR o.startDateTime <= :endDate) AND " +
             "(:status IS NULL OR o.status = :status) AND " +
             "(:seatingNumber IS NULL OR o.seating.number = :seatingNumber) AND " +
             "(:orderType IS NULL OR o.type = :orderType) AND " +
@@ -47,5 +47,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     Optional<Order> findBySeating_IdAndStatusAndBusiness_Id(Long seatingId, OrderStatus orderStatus, Long businessId);
 
-    List<Order> findByDateTimeBetweenAndBusiness_Id(LocalDateTime start, LocalDateTime end, Long businessId);
+    List<Order> findByStartDateTimeBetweenAndBusiness_Id(LocalDateTime start, LocalDateTime end, Long businessId);
+
+    List<Order> findByEndDateTimeBetweenAndBusiness_Id(LocalDateTime start, LocalDateTime end, Long businessId);
 }

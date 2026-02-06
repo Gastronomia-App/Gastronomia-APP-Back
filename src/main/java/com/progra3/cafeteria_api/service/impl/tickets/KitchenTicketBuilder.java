@@ -37,7 +37,7 @@ public class KitchenTicketBuilder implements TicketBuilderStrategy {
                 .orderType(order.getType())
                 .peopleCount(order.getPeopleCount())
                 .employeeName(helper.toPersonName(order.getEmployee()))
-                .dateTime(order.getDateTime())
+                .dateTime(order.getStartDateTime())
                 .title(title)
                 .build();
     }
