@@ -84,13 +84,13 @@ public class NotificationEventListener {
                 "Sin mesa asignada";
 
         String message = String.format("Nueva orden creada a las %s - %s",
-                order.getDateTime().format(TIME_FORMATTER), seatingInfo);
+                order.getStartDateTime().format(TIME_FORMATTER), seatingInfo);
 
         Map<String, Object> data = new HashMap<>();
         data.put("orderId", order.getId());
         data.put("orderType", order.getType());
         data.put("seatingNumber", order.getSeating() != null ? order.getSeating().getNumber() : null);
-        data.put("createdAt", order.getDateTime());
+        data.put("createdAt", order.getStartDateTime());
 
         notificationService.sendNotification(
                 NotificationType.ORDER_CREATED,
@@ -108,12 +108,12 @@ public class NotificationEventListener {
         Long businessId = order.getBusiness().getId();
 
         String message = String.format("Orden finalizada a las %s - Total: $%.2f",
-                order.getDateTime().format(TIME_FORMATTER), order.getTotal());
+                order.getEndDateTime().format(TIME_FORMATTER), order.getTotal());
 
         Map<String, Object> data = new HashMap<>();
         data.put("orderId", order.getId());
         data.put("total", order.getTotal());
-        data.put("finalizedAt", order.getDateTime());
+        data.put("finalizedAt", order.getEndDateTime());
         data.put("seatingNumber", order.getSeating() != null ? order.getSeating().getNumber() : null);
 
         notificationService.sendNotification(

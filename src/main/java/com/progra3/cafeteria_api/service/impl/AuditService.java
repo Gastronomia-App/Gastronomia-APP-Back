@@ -58,7 +58,8 @@ public class AuditService implements IAuditService {
         audit.setAuditStatus(AuditStatus.IN_PROGRESS);
         audit.setRealCash(Constant.ZERO_AMOUNT);
 
-        List<Order> orders = orderService.getByDateTimeBetween(audit.getStartTime(), LocalDateTime.now(clock));
+        // Buscar órdenes que se finalizaron (endDateTime) dentro del rango del audit
+        List<Order> orders = orderService.getByEndDateTimeBetween(audit.getStartTime(), LocalDateTime.now(clock));
         orders.forEach(order -> order.setAudit(audit));
         audit.setOrders(orders);
 
@@ -179,6 +180,13 @@ public class AuditService implements IAuditService {
     private double calculateOrdersTotal(Audit audit) {
         return audit.getOrders().stream()
                 .filter(order -> order.getStatus().equals(OrderStatus.FINALIZED))
+                .filter(order -> order.getEndDateTime() != null)
+                .filter(order -> {
+                    // Verificar que la orden se finalizó dentro del rango del audit
+                    boolean afterStart = !order.getEndDateTime().isBefore(audit.getStartTime());
+                    boolean beforeClose = audit.getCloseTime() == null || !order.getEndDateTime().isAfter(audit.getCloseTime());
+                    return afterStart && beforeClose;
+                })
                 .mapToDouble(Order::getTotal)
                 .sum();
     }

@@ -22,6 +22,7 @@ public interface IOrderService {
 
     Order getEntityById(Long orderId);
     List<Order> getByDateTimeBetween(LocalDateTime start, LocalDateTime end);
+    List<Order> getByEndDateTimeBetween(LocalDateTime start, LocalDateTime end);
 
     List<OrderResponseDTO> transferItemsBetweenOrders(Long originalOrderId, OrderSplitRequestDTO dto) ;
 

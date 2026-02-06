@@ -42,7 +42,7 @@ public class PreTicketBuilder implements TicketBuilderStrategy {
                 .peopleCount(order.getPeopleCount())
                 .employeeName(helper.toPersonName(order.getEmployee()))
                 .customerName(helper.toPersonName(order.getCustomer()))
-                .dateTime(order.getDateTime())
+                .dateTime(order.getStartDateTime())
                 .title(title)
                 .build();
     }
