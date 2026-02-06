@@ -166,18 +166,21 @@ public class AuditService implements IAuditService {
 
     @Override
     public void recalculateAudit(Audit audit) {
-        audit.setTotal(calculateTotal(audit));
-        audit.setTotalExpensed(calculateExpenseTotal(audit));
-        audit.setBalanceGap(audit.getRealCash() - (audit.getTotal() - audit.getTotalExpensed()));
+        double ordersTotal = calculateOrdersTotal(audit);
+        double expensesTotal = calculateExpenseTotal(audit);
+
+        audit.setTotal(audit.getInitialCash() + ordersTotal);
+        audit.setTotalExpensed(expensesTotal);
+
+        double expectedCash = audit.getInitialCash() + ordersTotal - expensesTotal;
+        audit.setBalanceGap(audit.getRealCash() - expectedCash);
     }
 
-    private double calculateTotal(Audit audit) {
-        double ordersTotal = audit.getOrders().stream()
+    private double calculateOrdersTotal(Audit audit) {
+        return audit.getOrders().stream()
                 .filter(order -> order.getStatus().equals(OrderStatus.FINALIZED))
                 .mapToDouble(Order::getTotal)
                 .sum();
-
-        return audit.getInitialCash() + ordersTotal;
     }
 
     private double calculateExpenseTotal(Audit audit) {
