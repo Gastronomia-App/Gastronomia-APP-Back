@@ -53,7 +53,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     WHERE b.slug = :slug
     AND p.active = true
     AND c.visibleInMenu = true
-    AND p.imageUrl IS NOT NULL
     ORDER BY c.id, p.name
 """)
     List<Product> findMenuProductsByBusinessSlug(@Param("slug") String slug);
