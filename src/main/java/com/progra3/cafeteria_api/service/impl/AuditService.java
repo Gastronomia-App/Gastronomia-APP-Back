@@ -170,10 +170,10 @@ public class AuditService implements IAuditService {
         double ordersTotal = calculateOrdersTotal(audit);
         double expensesTotal = calculateExpenseTotal(audit);
 
-        audit.setTotal(audit.getInitialCash() + ordersTotal);
+        audit.setTotal(ordersTotal);
         audit.setTotalExpensed(expensesTotal);
 
-        double expectedCash = audit.getInitialCash() + ordersTotal - expensesTotal;
+        double expectedCash = audit.getInitialCash() + audit.getTotal() - audit.getTotalExpensed();
         audit.setBalanceGap(audit.getRealCash() - expectedCash);
     }
 
