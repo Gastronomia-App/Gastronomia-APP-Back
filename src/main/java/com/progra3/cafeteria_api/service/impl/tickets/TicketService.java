@@ -8,6 +8,7 @@ import com.progra3.cafeteria_api.model.dto.ticket.Ticket;
 import com.progra3.cafeteria_api.model.dto.ticket.TicketContext;
 import com.progra3.cafeteria_api.model.entity.Item;
 import com.progra3.cafeteria_api.model.entity.Order;
+import com.progra3.cafeteria_api.model.enums.OrderStatus;
 import com.progra3.cafeteria_api.model.enums.TicketType;
 import com.progra3.cafeteria_api.service.port.IOrderService;
 import com.progra3.cafeteria_api.service.port.tickets.ITicketBuilderService;
@@ -52,7 +53,13 @@ public class TicketService implements ITicketService {
     public byte[] generatePreTicket(Long orderId) {
         try {
             Order order = orderService.getEntityById(orderId);
+
             Ticket ticket = ticketBuilderService.build(TicketType.PRE_TICKET, order, null);
+
+            if (order.getStatus() == OrderStatus.ACTIVE) {
+                orderService.updateStatus(orderId, OrderStatus.BILLED);
+            }
+
             return ticketPdfService.generateTicketPdf(ticket);
         } catch (Exception e) {
             log.error("Failed to generate pre-ticket for order ID: {}", orderId, e);

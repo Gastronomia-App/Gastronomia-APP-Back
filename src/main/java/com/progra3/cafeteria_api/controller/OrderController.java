@@ -382,10 +382,6 @@ public class OrderController {
             @Parameter(description = "ID of the order to generate pre-ticket for")
             @PathVariable @NotNull Long id) {
 
-        Order order = orderService.getEntityById(id);
-        if (order.getStatus() != OrderStatus.ACTIVE) {
-            order.setStatus(OrderStatus.BILLED);
-        }
         byte[] pdf = ticketService.generatePreTicket(id);
 
         return ResponseEntity
