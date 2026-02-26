@@ -43,10 +43,7 @@ public class EmployeeService implements IEmployeeService {
         if (baseUsername == null || baseUsername.isBlank() || business == null) {
             return null;
         }
-        String businessSuffix = business.getName()
-                .toLowerCase()
-                .replace(" ", "-");
-        return baseUsername + "@" + businessSuffix;
+        return baseUsername + "@" + business.getSlug();
     }
 
     private void setUsernameWithBusiness(Employee employee, String rawUsername) {
