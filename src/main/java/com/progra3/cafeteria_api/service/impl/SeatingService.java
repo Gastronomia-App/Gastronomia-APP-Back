@@ -14,9 +14,11 @@ import com.progra3.cafeteria_api.model.enums.SeatingStatus;
 import com.progra3.cafeteria_api.model.mapper.SeatingMapper;
 import com.progra3.cafeteria_api.repository.SeatingRepository;
 import com.progra3.cafeteria_api.security.EmployeeContext;
+import com.progra3.cafeteria_api.model.dto.websocket.DataChangeEvent;
 import com.progra3.cafeteria_api.service.port.ISeatingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -30,6 +32,7 @@ public class SeatingService implements ISeatingService {
     private final EmployeeContext employeeContext;
     private final SeatingMapper seatingMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final SimpMessagingTemplate messagingTemplate;
 
 
     @Override
@@ -63,7 +66,9 @@ public class SeatingService implements ISeatingService {
             throw new SeatingModificationNotAllowed("There is already a seating in this position.");
         }
 
-        return seatingMapper.toDTO(seatingRepository.save(seating));
+        SeatingResponseDTO result = seatingMapper.toDTO(seatingRepository.save(seating));
+        messagingTemplate.convertAndSend("/topic/data-changes/" + employeeContext.getCurrentBusinessId(), new DataChangeEvent("SEATING"));
+        return result;
     }
 
     @Override
@@ -110,7 +115,9 @@ public class SeatingService implements ISeatingService {
             throw new SeatingModificationNotAllowed("There is already a seating in this position.");
         }
 
-        return seatingMapper.toDTO(seatingRepository.save(seating));
+        SeatingResponseDTO result = seatingMapper.toDTO(seatingRepository.save(seating));
+        messagingTemplate.convertAndSend("/topic/data-changes/" + employeeContext.getCurrentBusinessId(), new DataChangeEvent("SEATING"));
+        return result;
     }
 
     @Override
@@ -127,6 +134,7 @@ public class SeatingService implements ISeatingService {
         seating.setStatus(newStatus);
         seatingRepository.save(seating);
 
+        messagingTemplate.convertAndSend("/topic/data-changes/" + employeeContext.getCurrentBusinessId(), new DataChangeEvent("SEATING"));
         checkSeatingAvailability(oldStatus, newStatus, seating);
     }
 
@@ -138,10 +146,13 @@ public class SeatingService implements ISeatingService {
             throw new SeatingModificationNotAllowed("Seating cannot be deleted while it is not free.");
         }
 
+        Long businessId = employeeContext.getCurrentBusinessId();
         seating.setStatus(SeatingStatus.DELETED);
         seating.setDeleted(true);
 
-        return seatingMapper.toDTO(seatingRepository.save(seating));
+        SeatingResponseDTO result = seatingMapper.toDTO(seatingRepository.save(seating));
+        messagingTemplate.convertAndSend("/topic/data-changes/" + businessId, new DataChangeEvent("SEATING"));
+        return result;
     }
 
     @Override
@@ -180,6 +191,7 @@ public class SeatingService implements ISeatingService {
         seating.setPosY(request.posY());
 
         seatingRepository.save(seating);
+        messagingTemplate.convertAndSend("/topic/data-changes/" + employeeContext.getCurrentBusinessId(), new DataChangeEvent("SEATING"));
         return seatingMapper.toDTO(seating);
     }
 

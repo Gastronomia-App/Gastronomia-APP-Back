@@ -8,10 +8,12 @@ import com.progra3.cafeteria_api.model.entity.Category;
 import com.progra3.cafeteria_api.model.mapper.CategoryMapper;
 import com.progra3.cafeteria_api.repository.CategoryRepository;
 import com.progra3.cafeteria_api.security.EmployeeContext;
+import com.progra3.cafeteria_api.model.dto.websocket.DataChangeEvent;
 import com.progra3.cafeteria_api.service.port.ICategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 
@@ -24,6 +26,7 @@ public class CategoryService implements ICategoryService {
     private final EmployeeContext employeeContext;
 
     private final CategoryMapper categoryMapper;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     public CategoryResponseDTO createCategory(CategoryRequestDTO categoryRequestDTO) {
@@ -34,7 +37,9 @@ public class CategoryService implements ICategoryService {
         // If visibleInMenu is null, default to true
         Boolean visibleInMenu = categoryRequestDTO.visibleInMenu();
         category.setVisibleInMenu(visibleInMenu == null ? Boolean.TRUE : visibleInMenu);
-        return categoryMapper.toDTO(categoryRepository.save(category));
+        CategoryResponseDTO result = categoryMapper.toDTO(categoryRepository.save(category));
+        messagingTemplate.convertAndSend("/topic/data-changes/" + category.getBusiness().getId(), new DataChangeEvent("CATEGORY"));
+        return result;
     }
 
     @Override
@@ -80,16 +85,20 @@ public class CategoryService implements ICategoryService {
             categoryToUpdate.setVisibleInMenu(categoryRequestDTO.visibleInMenu());
         }
 
-        return categoryMapper.toDTO(categoryRepository.save(categoryToUpdate));
+        CategoryResponseDTO result = categoryMapper.toDTO(categoryRepository.save(categoryToUpdate));
+        messagingTemplate.convertAndSend("/topic/data-changes/" + businessId, new DataChangeEvent("CATEGORY"));
+        return result;
     }
 
     @Override
     public void deleteCategory(Long id) {
-        Category category = categoryRepository.findByIdAndBusiness_Id(id, employeeContext.getCurrentBusinessId())
+        Long businessId = employeeContext.getCurrentBusinessId();
+        Category category = categoryRepository.findByIdAndBusiness_Id(id, businessId)
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID " + id + " for the current business."));
         if (!category.getProducts().isEmpty()) {
             throw new CategoryCannotBeDeletedException("Cannot delete category with associated products.");
         }
         categoryRepository.delete(category);
+        messagingTemplate.convertAndSend("/topic/data-changes/" + businessId, new DataChangeEvent("CATEGORY"));
     }
 }

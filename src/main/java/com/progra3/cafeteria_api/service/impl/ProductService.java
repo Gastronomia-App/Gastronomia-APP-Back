@@ -13,12 +13,14 @@ import com.progra3.cafeteria_api.model.entity.ProductComponent;
 import com.progra3.cafeteria_api.model.entity.ProductGroup;
 import com.progra3.cafeteria_api.repository.ProductRepository;
 import com.progra3.cafeteria_api.security.EmployeeContext;
+import com.progra3.cafeteria_api.model.dto.websocket.DataChangeEvent;
 import com.progra3.cafeteria_api.service.port.IProductImageStorageService;
 import com.progra3.cafeteria_api.service.port.IProductService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
@@ -37,6 +39,7 @@ public class ProductService implements IProductService {
     private final IProductImageStorageService productImageStorageService; // <- NUEVO
 
     private final ProductMapper productMapper;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     @Override
@@ -48,7 +51,9 @@ public class ProductService implements IProductService {
 
         updateProductRelationships(product, productRequestDTO);
 
-        return productMapper.toDTO(productRepository.save(product));
+        ProductResponseDTO result = productMapper.toDTO(productRepository.save(product));
+        messagingTemplate.convertAndSend("/topic/data-changes/" + product.getBusiness().getId(), new DataChangeEvent("PRODUCT"));
+        return result;
     }
 
     @Override
@@ -106,20 +111,25 @@ public class ProductService implements IProductService {
             product.setImageUrl(newImageUrl);
         }
 
-        return productMapper.toDTO(productRepository.save(product));
+        ProductResponseDTO result = productMapper.toDTO(productRepository.save(product));
+        messagingTemplate.convertAndSend("/topic/data-changes/" + businessId, new DataChangeEvent("PRODUCT"));
+        return result;
     }
 
 
     @Transactional
     @Override
     public ProductResponseDTO updateProduct(Product updatedProduct) {
-        return productMapper.toDTO(productRepository.save(updatedProduct));
+        ProductResponseDTO result = productMapper.toDTO(productRepository.save(updatedProduct));
+        messagingTemplate.convertAndSend("/topic/data-changes/" + updatedProduct.getBusiness().getId(), new DataChangeEvent("PRODUCT"));
+        return result;
     }
 
     @Transactional
     @Override
     public ProductResponseDTO deleteProduct(Long id) {
         Product product = getEntityById(id);
+        Long businessId = product.getBusiness().getId();
 
         String oldImageUrl = product.getImageUrl(); // guardar URL antes de tocar nada
         ProductResponseDTO productDTO = productMapper.toDTO(product);
@@ -140,6 +150,7 @@ public class ProductService implements IProductService {
         // 5. Delete image file (if exists)
         productImageStorageService.delete(oldImageUrl);
 
+        messagingTemplate.convertAndSend("/topic/data-changes/" + businessId, new DataChangeEvent("PRODUCT"));
         return productDTO;
     }
 
@@ -158,7 +169,9 @@ public class ProductService implements IProductService {
         product.getProductGroups().add(group);
         adjustComposite(product);
 
-        return productMapper.toDTO(productRepository.save(product));
+        ProductResponseDTO result = productMapper.toDTO(productRepository.save(product));
+        messagingTemplate.convertAndSend("/topic/data-changes/" + employeeContext.getCurrentBusinessId(), new DataChangeEvent("PRODUCT"));
+        return result;
     }
 
     @Transactional
@@ -170,7 +183,9 @@ public class ProductService implements IProductService {
         product.getProductGroups().remove(group);
         adjustComposite(product);
 
-        return productMapper.toDTO(productRepository.save(product));
+        ProductResponseDTO result = productMapper.toDTO(productRepository.save(product));
+        messagingTemplate.convertAndSend("/topic/data-changes/" + employeeContext.getCurrentBusinessId(), new DataChangeEvent("PRODUCT"));
+        return result;
     }
 
     @Override
@@ -178,7 +193,9 @@ public class ProductService implements IProductService {
         Product product = getEntityById(productId);
         dtos.forEach(dto -> addComponent(product, dto));
         adjustComposite(product);
-        return productMapper.toDTO(productRepository.save(product));
+        ProductResponseDTO result = productMapper.toDTO(productRepository.save(product));
+        messagingTemplate.convertAndSend("/topic/data-changes/" + employeeContext.getCurrentBusinessId(), new DataChangeEvent("PRODUCT"));
+        return result;
     }
 
     @Override
@@ -189,7 +206,9 @@ public class ProductService implements IProductService {
                 .findFirst()
                 .ifPresent(component -> component.setQuantity(quantity));
 
-        return productMapper.toDTO(productRepository.save(product));
+        ProductResponseDTO result = productMapper.toDTO(productRepository.save(product));
+        messagingTemplate.convertAndSend("/topic/data-changes/" + employeeContext.getCurrentBusinessId(), new DataChangeEvent("PRODUCT"));
+        return result;
     }
 
     @Override
@@ -198,7 +217,9 @@ public class ProductService implements IProductService {
         product.getComponents().removeIf(component -> component.getId().equals(componentId));
         adjustComposite(product);
 
-        return productMapper.toDTO(productRepository.save(product));
+        ProductResponseDTO result = productMapper.toDTO(productRepository.save(product));
+        messagingTemplate.convertAndSend("/topic/data-changes/" + employeeContext.getCurrentBusinessId(), new DataChangeEvent("PRODUCT"));
+        return result;
     }
 
     private void updateProductRelationships(Product product, ProductRequestDTO productRequestDTO) {

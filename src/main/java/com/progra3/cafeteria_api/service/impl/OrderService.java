@@ -26,6 +26,7 @@ import com.progra3.cafeteria_api.model.enums.OrderType;
 import com.progra3.cafeteria_api.model.enums.SeatingStatus;
 import com.progra3.cafeteria_api.repository.OrderRepository;
 import com.progra3.cafeteria_api.security.EmployeeContext;
+import com.progra3.cafeteria_api.model.dto.websocket.DataChangeEvent;
 import com.progra3.cafeteria_api.service.port.IOrderService;
 import com.progra3.cafeteria_api.service.helper.Constant;
 import jakarta.transaction.Transactional;
@@ -33,6 +34,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -53,6 +55,7 @@ public class OrderService implements IOrderService {
     private final ItemService itemService;
     private final PaymentMethodService paymentMethodService;
     private final ApplicationEventPublisher eventPublisher;
+    private final SimpMessagingTemplate messagingTemplate;
 
     private final OrderMapper orderMapper;
     private final ItemMapper itemMapper;
@@ -63,6 +66,7 @@ public class OrderService implements IOrderService {
     @Override
     public OrderResponseDTO create(OrderRequestDTO dto) {
         Order savedOrder = createAndSaveOrder(dto);
+        messagingTemplate.convertAndSend("/topic/data-changes/" + savedOrder.getBusiness().getId(), new DataChangeEvent("ORDER"));
         return orderMapper.toDTO(savedOrder);
     }
 
@@ -132,7 +136,9 @@ public class OrderService implements IOrderService {
 
         recalculate(order);
 
-        return orderMapper.toDTO(orderRepository.save(order));
+        OrderResponseDTO result = orderMapper.toDTO(orderRepository.save(order));
+        messagingTemplate.convertAndSend("/topic/data-changes/" + order.getBusiness().getId(), new DataChangeEvent("ORDER"));
+        return result;
     }
 
     @Transactional
@@ -144,7 +150,9 @@ public class OrderService implements IOrderService {
 
         applyDiscount(order, discount);
 
-        return orderMapper.toDTO(orderRepository.save(order));
+        OrderResponseDTO result = orderMapper.toDTO(orderRepository.save(order));
+        messagingTemplate.convertAndSend("/topic/data-changes/" + order.getBusiness().getId(), new DataChangeEvent("ORDER"));
+        return result;
     }
 
     @Transactional
@@ -166,7 +174,9 @@ public class OrderService implements IOrderService {
             eventPublisher.publishEvent(new OrderFinalizedEvent(order));
         }
 
-        return orderMapper.toDTO(orderRepository.save(order));
+        OrderResponseDTO result = orderMapper.toDTO(orderRepository.save(order));
+        messagingTemplate.convertAndSend("/topic/data-changes/" + order.getBusiness().getId(), new DataChangeEvent("ORDER"));
+        return result;
     }
 
     @Transactional
@@ -220,7 +230,9 @@ public class OrderService implements IOrderService {
 
         eventPublisher.publishEvent(new OrderFinalizedEvent(order));
 
-        return orderMapper.toDTO(orderRepository.save(order));
+        OrderResponseDTO result = orderMapper.toDTO(orderRepository.save(order));
+        messagingTemplate.convertAndSend("/topic/data-changes/" + order.getBusiness().getId(), new DataChangeEvent("ORDER"));
+        return result;
     }
 
     private void validateNoDuplicatePaymentMethods(List<OrderPaymentMethodDTO> paymentMethodsDTO) {
@@ -259,6 +271,7 @@ public class OrderService implements IOrderService {
 
         saveOrders(originalOrder, destinationOrder);
 
+        messagingTemplate.convertAndSend("/topic/data-changes/" + originalOrder.getBusiness().getId(), new DataChangeEvent("ORDER"));
         return List.of(orderMapper.toDTO(originalOrder), orderMapper.toDTO(destinationOrder));
     }
 
@@ -278,6 +291,7 @@ public class OrderService implements IOrderService {
         eventPublisher.publishEvent(new OrderItemsAddedEvent(savedOrder, newItems));
 
         // 4) Devolver la orden actualizada como antes
+        messagingTemplate.convertAndSend("/topic/data-changes/" + savedOrder.getBusiness().getId(), new DataChangeEvent("ORDER"));
         return orderMapper.toDTO(savedOrder);
     }
 
@@ -304,6 +318,7 @@ public class OrderService implements IOrderService {
         recalculate(order);
         orderRepository.save(order);
 
+        messagingTemplate.convertAndSend("/topic/data-changes/" + order.getBusiness().getId(), new DataChangeEvent("ORDER"));
         return itemMapper.toDTO(itemToRemove);
     }
 
@@ -325,6 +340,7 @@ public class OrderService implements IOrderService {
 
         orderRepository.save(order);
 
+        messagingTemplate.convertAndSend("/topic/data-changes/" + order.getBusiness().getId(), new DataChangeEvent("ORDER"));
         return itemMapper.toDTO(itemToUpdate);
     }
 
