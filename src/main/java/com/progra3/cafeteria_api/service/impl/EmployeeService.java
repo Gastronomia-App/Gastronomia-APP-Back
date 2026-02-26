@@ -45,7 +45,7 @@ public class EmployeeService implements IEmployeeService {
         }
         String businessSuffix = business.getName()
                 .toLowerCase()
-                .replace(" ", "_");
+                .replace(" ", "-");
         return baseUsername + "@" + businessSuffix;
     }
 
